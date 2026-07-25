@@ -1,101 +1,41 @@
-# ==========================
-# Dependencies
-# ==========================
-**/node_modules/
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# ==========================
-# Build Outputs
-# ==========================
-**/dist/
-**/.next/
-**/build/
-**/coverage/
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# ==========================
-# Logs
-# ==========================
-*.log
-logs/
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
 npm-debug.log*
-pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
 
-# ==========================
-# Environment Variables
-# ==========================
-.env
-.env.*
-!.env.example
+# env files (can opt-in for committing if needed)
+.env*
 
-# ==========================
-# Database
-# ==========================
-*.sqlite
-*.sqlite3
-*.db
+# vercel
+.vercel
 
-# PostgreSQL dumps
-*.sql
-
-# ==========================
-# Drizzle
-# ==========================
-drizzle/meta/_journal.json
-
-# ==========================
-# IDE
-# ==========================
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
-
-.idea/
-
-# ==========================
-# OS Files
-# ==========================
-.DS_Store
-Thumbs.db
-
-# ==========================
-# Temporary Files
-# ==========================
-tmp/
-temp/
-.cache/
-
-# ==========================
-# Testing
-# ==========================
-.nyc_output/
-
-# ==========================
-# Docker
-# ==========================
-docker-data/
-
-# ==========================
-# Misc
-# ==========================
-*.pid
-*.seed
-*.tgz
-
-# ==========================
-# TypeScript
-# ==========================
+# typescript
 *.tsbuildinfo
-
-# ==========================
-# Local uploads (if any)
-# ==========================
-uploads/
-storage/
-
-# ==========================
-# Secrets
-# ==========================
-*.pem
-*.key
-*.crt
+next-env.d.ts

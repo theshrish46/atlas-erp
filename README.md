@@ -1,115 +1,36 @@
-# Atlas ERP
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-> A production-grade, enterprise-scale ERP system built with modern backend engineering principles.
+## Getting Started
 
-## Overview
+First, run the development server:
 
-Atlas ERP is a full-stack enterprise resource planning platform designed to simulate the architecture and engineering practices used in real-world SaaS products.
-
-The project focuses on building scalable, maintainable, and secure software rather than just implementing CRUD operations.
-
-The backend is being developed first and will later be consumed by a Next.js frontend.
-
----
-
-## Tech Stack
-
-### Backend
-
-- NestJS
-- TypeScript
-- PostgreSQL
-- Drizzle ORM
-- JWT Authentication
-- Docker
-
-### Frontend (Planned)
-
-- Next.js
-- React
-- Tailwind CSS
-- TanStack Query
-- shadcn/ui
-
----
-
-## Project Goals
-
-- Enterprise Architecture
-- Clean Code
-- SOLID Principles
-- Domain-Driven Modules
-- RBAC
-- Multi-Tenant Support
-- Production-grade Security
-- API Documentation
-- Logging
-- Testing
-- Dockerized Deployment
-
----
-
-## Current Status
-
-🚧 Under Active Development
-
-Current milestone:
-
-- Backend Foundation
-- Authentication Module
-
----
-
-## Planned Modules
-
-- Authentication
-- Company Management
-- User Management
-- Roles & Permissions
-- Vendor Management
-- Product Management
-- Warehouse Management
-- Inventory
-- Procurement
-- Sales
-- Invoicing
-- Reports
-- AI Features
-
----
-
-## Repository Structure
-
-```
-atlas-erp/
-│
-├── apps/
-│   ├── backend/
-│   └── frontend/
-│
-├── docs/
-├── docker/
-├── scripts/
-└── README.md
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
----
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Documentation
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-Project documentation will be maintained under the `/docs` directory.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-Topics include:
+## Learn More
 
-- Architecture
-- Database Design
-- API Documentation
-- Security
-- Deployment
-- Engineering Decisions
+To learn more about Next.js, take a look at the following resources:
 
----
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-## License
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-MIT
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
