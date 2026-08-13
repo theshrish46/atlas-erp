@@ -105,8 +105,6 @@ export const companies = pgTable(
         name: varchar("name", { length: 255 }).notNull(),
         slug: varchar("slug", { length: 100 }).notNull(),
 
-        email: varchar("email", { length: 255 }).notNull(),
-        phone: varchar("phone", { length: 20 }),
         website: varchar("website", { length: 255 }),
         logoUrl: text("logo_url"),
 
