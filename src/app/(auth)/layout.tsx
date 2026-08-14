@@ -64,9 +64,8 @@ export default function AuthLayout({
             </section>
 
             {/* Right Side */}
-            <section className="relative flex items-center justify-center bg-background px-6 py-12">
-
-                <div className="w-full max-w-md">
+            <section className="relative flex items-center justify-center bg-background px-8 py-10 lg:px-12">
+                <div className="w-full max-w-3xl">
                     {children}
                 </div>
             </section>
