@@ -407,13 +407,13 @@ export default function DashboardLayout({
                                 <DropdownMenuSeparator />
 
                                 <DropdownMenuItem asChild>
-                                    <Link href="/dashboard/profile">
+                                    <Link href="/profile">
                                         Profile
                                     </Link>
                                 </DropdownMenuItem>
 
                                 <DropdownMenuItem asChild>
-                                    <Link href="/dashboard/settings">
+                                    <Link href="/settings">
                                         Settings
                                     </Link>
                                 </DropdownMenuItem>
