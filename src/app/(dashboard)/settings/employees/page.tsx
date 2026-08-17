@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
     Check,
-    ChevronDown,
     Loader2,
     MoreHorizontal,
     Plus,
@@ -52,6 +51,29 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
 
 /* -------------------------------------------------------------------------- */
 /* Types                                                                      */
@@ -184,6 +206,49 @@ export default function EmployeesPage() {
 
     const [editIsActive, setEditIsActive] =
         useState(true);
+
+    /* ---------------------------------------------------------------------- */
+    /* Department helpers                                                    */
+    /* ---------------------------------------------------------------------- */
+
+    function toggleCreateDepartment(
+        departmentId: string,
+    ) {
+        setCreateDepartmentIds((current) => {
+            if (current.includes(departmentId)) {
+                return current.filter(
+                    (id) => id !== departmentId,
+                );
+            }
+
+            return [...current, departmentId];
+        });
+    }
+
+    function toggleEditDepartment(
+        departmentId: string,
+    ) {
+        setEditDepartmentIds((current) => {
+            if (current.includes(departmentId)) {
+                return current.filter(
+                    (id) => id !== departmentId,
+                );
+            }
+
+            return [...current, departmentId];
+        });
+    }
+
+    function getDepartmentName(
+        departmentId: string,
+    ) {
+        return (
+            departments.find(
+                (department) =>
+                    department.id === departmentId,
+            )?.name ?? "Unknown"
+        );
+    }
 
     /* ---------------------------------------------------------------------- */
     /* Load employees                                                         */
@@ -329,23 +394,6 @@ export default function EmployeesPage() {
         setCreateError(null);
     }
 
-    function toggleCreateDepartment(
-        departmentId: string,
-    ) {
-        setCreateDepartmentIds((current) => {
-            if (current.includes(departmentId)) {
-                return current.filter(
-                    (id) => id !== departmentId,
-                );
-            }
-
-            return [
-                ...current,
-                departmentId,
-            ];
-        });
-    }
-
     /* ---------------------------------------------------------------------- */
     /* Create employee                                                        */
     /* ---------------------------------------------------------------------- */
@@ -465,27 +513,6 @@ export default function EmployeesPage() {
     }
 
     /* ---------------------------------------------------------------------- */
-    /* Toggle edit department                                                 */
-    /* ---------------------------------------------------------------------- */
-
-    function toggleEditDepartment(
-        departmentId: string,
-    ) {
-        setEditDepartmentIds((current) => {
-            if (current.includes(departmentId)) {
-                return current.filter(
-                    (id) => id !== departmentId,
-                );
-            }
-
-            return [
-                ...current,
-                departmentId,
-            ];
-        });
-    }
-
-    /* ---------------------------------------------------------------------- */
     /* Save employee                                                          */
     /* ---------------------------------------------------------------------- */
 
@@ -505,8 +532,7 @@ export default function EmployeesPage() {
             setEditing(true);
             setEditError(null);
 
-            const payload: UpdateEmployeePayload =
-            {
+            const payload: UpdateEmployeePayload = {
                 fullName:
                     editFullName.trim(),
 
@@ -613,8 +639,8 @@ export default function EmployeesPage() {
                     >
                         <RefreshCw
                             className={`mr-2 h-4 w-4 ${refreshing
-                                    ? "animate-spin"
-                                    : ""
+                                ? "animate-spin"
+                                : ""
                                 }`}
                         />
 
@@ -758,8 +784,7 @@ export default function EmployeesPage() {
                                 Try Again
                             </Button>
                         </div>
-                    ) : filteredEmployees.length ===
-                        0 ? (
+                    ) : filteredEmployees.length === 0 ? (
                         <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 px-6 text-center">
 
                             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
@@ -836,9 +861,7 @@ export default function EmployeesPage() {
                                                     {employee.role ? (
                                                         <Badge variant="outline">
                                                             {
-                                                                employee
-                                                                    .role
-                                                                    .name
+                                                                employee.role.name
                                                             }
                                                         </Badge>
                                                     ) : (
@@ -932,6 +955,7 @@ export default function EmployeesPage() {
                                                         ? "Deactivate Employee"
                                                         : "Activate Employee"}
                                                 </DropdownMenuItem>
+
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
@@ -942,9 +966,9 @@ export default function EmployeesPage() {
                 </CardContent>
             </Card>
 
-            {/* ==============================================================
-                CREATE EMPLOYEE
-            ============================================================== */}
+            {/* ============================================================== */}
+            {/* CREATE EMPLOYEE                                                */}
+            {/* ============================================================== */}
 
             <Dialog
                 open={dialogOpen}
@@ -956,254 +980,324 @@ export default function EmployeesPage() {
                     }
                 }}
             >
-                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-5xl">
 
-                    <DialogHeader>
-                        <DialogTitle>
+                    <DialogHeader className="border-b pb-5">
+                        <DialogTitle className="text-xl">
                             Add Employee
                         </DialogTitle>
 
                         <DialogDescription>
-                            Create an employee account
-                            and assign their role and
-                            departments.
+                            Create an employee account and
+                            configure their organizational
+                            access.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="space-y-6 py-4">
+                    <div className="space-y-8 py-6">
 
-                        {/* Basic information */}
+                        {/* Account information */}
 
-                        <div className="space-y-4">
+                        <section className="space-y-5">
 
-                            <h3 className="font-semibold">
-                                Account Information
-                            </h3>
+                            <div>
+                                <h3 className="text-base font-semibold">
+                                    Account Information
+                                </h3>
 
-                            <div className="space-y-2">
-                                <Label>
-                                    Full Name
-                                </Label>
-
-                                <Input
-                                    placeholder="John Doe"
-                                    value={
-                                        fullName
-                                    }
-                                    onChange={(event) =>
-                                        setFullName(
-                                            event
-                                                .target
-                                                .value,
-                                        )
-                                    }
-                                    disabled={
-                                        creating
-                                    }
-                                />
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Basic information used to
+                                    create the employee account.
+                                </p>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label>
-                                    Email Address
-                                </Label>
+                            <div className="grid gap-5 sm:grid-cols-2">
 
-                                <Input
-                                    type="email"
-                                    placeholder="john@company.com"
-                                    value={
-                                        email
-                                    }
-                                    onChange={(event) =>
-                                        setEmail(
-                                            event
-                                                .target
-                                                .value,
-                                        )
-                                    }
-                                    disabled={
-                                        creating
-                                    }
-                                />
+                                <div className="space-y-2">
+                                    <Label htmlFor="fullName">
+                                        Full Name
+                                    </Label>
+
+                                    <Input
+                                        id="fullName"
+                                        placeholder="John Doe"
+                                        value={fullName}
+                                        onChange={(event) =>
+                                            setFullName(
+                                                event.target.value,
+                                            )
+                                        }
+                                        disabled={creating}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="email">
+                                        Email Address
+                                    </Label>
+
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        placeholder="john@company.com"
+                                        value={email}
+                                        onChange={(event) =>
+                                            setEmail(
+                                                event.target.value,
+                                            )
+                                        }
+                                        disabled={creating}
+                                    />
+                                </div>
+
                             </div>
 
-                            <div className="space-y-2">
-                                <Label>
+                            <div className="space-y-2 sm:max-w-[50%]">
+                                <Label htmlFor="password">
                                     Temporary Password
                                 </Label>
 
                                 <Input
+                                    id="password"
                                     type="password"
                                     placeholder="Minimum 8 characters"
-                                    value={
-                                        password
-                                    }
+                                    value={password}
                                     onChange={(event) =>
                                         setPassword(
-                                            event
-                                                .target
-                                                .value,
+                                            event.target.value,
                                         )
                                     }
-                                    disabled={
-                                        creating
-                                    }
+                                    disabled={creating}
                                 />
-                            </div>
-                        </div>
 
-                        <Separator />
-
-                        {/* Role */}
-
-                        <div className="space-y-3">
-
-                            <div>
-                                <h3 className="font-semibold">
-                                    Role
-                                </h3>
-
-                                <p className="text-sm text-muted-foreground">
-                                    Determines what this
-                                    employee can access.
+                                <p className="text-xs text-muted-foreground">
+                                    The employee can change this
+                                    password after signing in.
                                 </p>
                             </div>
 
-                            <select
-                                value={
-                                    createRoleId
-                                }
-                                onChange={(event) =>
-                                    setCreateRoleId(
-                                        event
-                                            .target
-                                            .value,
-                                    )
-                                }
-                                disabled={
-                                    creating
-                                }
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            >
-                                <option value="">
-                                    No role
-                                </option>
-
-                                {roles.map(
-                                    (role) => (
-                                        <option
-                                            key={
-                                                role.id
-                                            }
-                                            value={
-                                                role.id
-                                            }
-                                        >
-                                            {
-                                                role.name
-                                            }
-                                        </option>
-                                    ),
-                                )}
-                            </select>
-                        </div>
+                        </section>
 
                         <Separator />
 
-                        {/* Departments */}
+                        {/* Organization */}
 
-                        <div className="space-y-3">
+                        <section className="space-y-5">
 
                             <div>
-                                <h3 className="font-semibold">
-                                    Departments
+                                <h3 className="text-base font-semibold">
+                                    Organization
                                 </h3>
 
-                                <p className="text-sm text-muted-foreground">
-                                    An employee can belong
-                                    to multiple departments.
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Assign the employee's role
+                                    and departments.
                                 </p>
                             </div>
 
-                            {departments.length ===
-                                0 ? (
-                                <div className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
-                                    No departments available.
-                                </div>
-                            ) : (
+                            <div className="grid gap-6 sm:grid-cols-2">
+
+                                {/* Role */}
+
                                 <div className="space-y-2">
+                                    <Label>
+                                        Role
+                                    </Label>
 
-                                    {departments.map(
-                                        (
-                                            department,
-                                        ) => {
-                                            const checked =
-                                                createDepartmentIds.includes(
-                                                    department.id,
-                                                );
+                                    <Select
+                                        value={
+                                            createRoleId ||
+                                            undefined
+                                        }
+                                        onValueChange={
+                                            setCreateRoleId
+                                        }
+                                        disabled={creating}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Select a role" />
+                                        </SelectTrigger>
 
-                                            return (
-                                                <button
-                                                    type="button"
-                                                    key={
-                                                        department.id
-                                                    }
-                                                    onClick={() =>
-                                                        toggleCreateDepartment(
-                                                            department.id,
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        creating
-                                                    }
-                                                    className="flex w-full items-center justify-between rounded-lg border p-3 text-left transition hover:bg-muted"
+                                        <SelectContent>
+                                            {roles.length ===
+                                                0 ? (
+                                                <SelectItem
+                                                    value="none"
+                                                    disabled
                                                 >
+                                                    No roles available
+                                                </SelectItem>
+                                            ) : (
+                                                roles.map(
+                                                    (role) => (
+                                                        <SelectItem
+                                                            key={
+                                                                role.id
+                                                            }
+                                                            value={
+                                                                role.id
+                                                            }
+                                                        >
+                                                            {
+                                                                role.name
+                                                            }
+                                                        </SelectItem>
+                                                    ),
+                                                )
+                                            )}
+                                        </SelectContent>
+                                    </Select>
 
-                                                    <span className="text-sm font-medium">
-                                                        {
-                                                            department.name
-                                                        }
-                                                    </span>
-
-                                                    <div
-                                                        className={`flex h-5 w-5 items-center justify-center rounded border ${checked
-                                                                ? "border-primary bg-primary text-primary-foreground"
-                                                                : "border-input"
-                                                            }`}
-                                                    >
-                                                        {checked && (
-                                                            <Check className="h-3.5 w-3.5" />
-                                                        )}
-                                                    </div>
-                                                </button>
-                                            );
-                                        },
-                                    )}
+                                    <p className="text-xs text-muted-foreground">
+                                        Determines what this
+                                        employee can access.
+                                    </p>
                                 </div>
-                            )}
-                        </div>
+
+                                {/* Departments */}
+
+                                <div className="space-y-2">
+                                    <Label>
+                                        Departments
+                                    </Label>
+
+                                    <Popover>
+                                        <PopoverTrigger
+                                            asChild
+                                        >
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                role="combobox"
+                                                disabled={
+                                                    creating ||
+                                                    departments.length ===
+                                                    0
+                                                }
+                                                className="h-auto min-h-10 w-full justify-between px-3 py-2 font-normal"
+                                            >
+                                                <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+
+                                                    {createDepartmentIds.length ===
+                                                        0 ? (
+                                                        <span className="text-muted-foreground">
+                                                            Select departments
+                                                        </span>
+                                                    ) : (
+                                                        createDepartmentIds.map(
+                                                            (
+                                                                departmentId,
+                                                            ) => (
+                                                                <Badge
+                                                                    key={
+                                                                        departmentId
+                                                                    }
+                                                                    variant="secondary"
+                                                                    className="max-w-full"
+                                                                >
+                                                                    <span className="truncate">
+                                                                        {getDepartmentName(
+                                                                            departmentId,
+                                                                        )}
+                                                                    </span>
+                                                                </Badge>
+                                                            ),
+                                                        )
+                                                    )}
+
+                                                </div>
+                                            </Button>
+                                        </PopoverTrigger>
+
+                                        <PopoverContent
+                                            align="start"
+                                            className="w-[var(--radix-popover-trigger-width)] p-0"
+                                        >
+                                            <Command>
+
+                                                <CommandInput placeholder="Search departments..." />
+
+                                                <CommandList>
+
+                                                    <CommandEmpty>
+                                                        No departments found.
+                                                    </CommandEmpty>
+
+                                                    <CommandGroup>
+                                                        {departments.map(
+                                                            (
+                                                                department,
+                                                            ) => {
+                                                                const checked =
+                                                                    createDepartmentIds.includes(
+                                                                        department.id,
+                                                                    );
+
+                                                                return (
+                                                                    <CommandItem
+                                                                        key={
+                                                                            department.id
+                                                                        }
+                                                                        value={
+                                                                            department.name
+                                                                        }
+                                                                        onSelect={() =>
+                                                                            toggleCreateDepartment(
+                                                                                department.id,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <div
+                                                                            className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${checked
+                                                                                ? "border-primary bg-primary text-primary-foreground"
+                                                                                : "border-muted-foreground/30"
+                                                                                }`}
+                                                                        >
+                                                                            {checked && (
+                                                                                <Check className="h-3 w-3" />
+                                                                            )}
+                                                                        </div>
+
+                                                                        {
+                                                                            department.name
+                                                                        }
+                                                                    </CommandItem>
+                                                                );
+                                                            },
+                                                        )}
+                                                    </CommandGroup>
+
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+
+                                    <p className="text-xs text-muted-foreground">
+                                        An employee can belong to
+                                        multiple departments.
+                                    </p>
+                                </div>
+
+                            </div>
+
+                        </section>
 
                         {createError && (
-                            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                                {
-                                    createError
-                                }
+                            <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                                {createError}
                             </div>
                         )}
+
                     </div>
 
-                    <DialogFooter>
+                    <DialogFooter className="border-t pt-5">
 
                         <Button
                             variant="outline"
                             onClick={() =>
-                                setDialogOpen(
-                                    false,
-                                )
+                                setDialogOpen(false)
                             }
-                            disabled={
-                                creating
-                            }
+                            disabled={creating}
                         >
                             Cancel
                         </Button>
@@ -1212,9 +1306,7 @@ export default function EmployeesPage() {
                             onClick={() =>
                                 void handleCreateEmployee()
                             }
-                            disabled={
-                                creating
-                            }
+                            disabled={creating}
                         >
                             {creating ? (
                                 <>
@@ -1228,248 +1320,377 @@ export default function EmployeesPage() {
                                 </>
                             )}
                         </Button>
+
                     </DialogFooter>
+
                 </DialogContent>
             </Dialog>
 
-            {/* ==============================================================
-                EDIT EMPLOYEE
-            ============================================================== */}
+            {/* ============================================================== */}
+            {/* EDIT EMPLOYEE                                                  */}
+            {/* ============================================================== */}
 
             <Dialog
                 open={editDialogOpen}
                 onOpenChange={setEditDialogOpen}
             >
-                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
 
-                    <DialogHeader>
-                        <DialogTitle>
+                    <DialogHeader className="border-b pb-5">
+                        <DialogTitle className="text-xl">
                             Edit Employee
                         </DialogTitle>
 
                         <DialogDescription>
                             Update employee information,
-                            role, departments, and status.
+                            organizational access, and
+                            account status.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="space-y-6 py-4">
+                    <div className="space-y-8 py-6">
 
-                        <div className="space-y-2">
-                            <Label>
-                                Full Name
-                            </Label>
+                        {/* Employee information */}
 
-                            <Input
-                                value={
-                                    editFullName
-                                }
-                                onChange={(event) =>
-                                    setEditFullName(
-                                        event
-                                            .target
-                                            .value,
-                                    )
-                                }
-                                disabled={
-                                    editing
-                                }
-                            />
-                        </div>
-
-                        {selectedEmployee && (
-                            <div className="rounded-lg bg-muted/50 p-3 text-sm">
-                                <span className="text-muted-foreground">
-                                    Email:{" "}
-                                </span>
-
-                                {
-                                    selectedEmployee.email
-                                }
-                            </div>
-                        )}
-
-                        <Separator />
-
-                        <div className="space-y-3">
+                        <section className="space-y-5">
 
                             <div>
-                                <h3 className="font-semibold">
-                                    Role
+                                <h3 className="text-base font-semibold">
+                                    Employee Information
                                 </h3>
 
-                                <p className="text-sm text-muted-foreground">
-                                    Select the employee's
-                                    access role.
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Update the employee's basic
+                                    information.
                                 </p>
                             </div>
 
-                            <select
-                                value={
-                                    editRoleId
-                                }
-                                onChange={(event) =>
-                                    setEditRoleId(
-                                        event
-                                            .target
-                                            .value,
-                                    )
-                                }
-                                disabled={
-                                    editing
-                                }
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            >
-                                <option value="">
-                                    No role
-                                </option>
+                            <div className="grid gap-5 sm:grid-cols-2">
 
-                                {roles.map(
-                                    (role) => (
-                                        <option
-                                            key={
-                                                role.id
-                                            }
+                                <div className="space-y-2">
+                                    <Label htmlFor="editFullName">
+                                        Full Name
+                                    </Label>
+
+                                    <Input
+                                        id="editFullName"
+                                        value={editFullName}
+                                        onChange={(event) =>
+                                            setEditFullName(
+                                                event.target.value,
+                                            )
+                                        }
+                                        disabled={editing}
+                                    />
+                                </div>
+
+                                {selectedEmployee && (
+                                    <div className="space-y-2">
+                                        <Label>
+                                            Email Address
+                                        </Label>
+
+                                        <Input
                                             value={
-                                                role.id
+                                                selectedEmployee.email
                                             }
-                                        >
-                                            {
-                                                role.name
-                                            }
-                                        </option>
-                                    ),
+                                            disabled
+                                        />
+
+                                        <p className="text-xs text-muted-foreground">
+                                            Email addresses cannot
+                                            be changed here.
+                                        </p>
+                                    </div>
                                 )}
-                            </select>
-                        </div>
+
+                            </div>
+
+                        </section>
 
                         <Separator />
 
-                        <div className="space-y-3">
+                        {/* Organization */}
+
+                        <section className="space-y-5">
 
                             <div>
-                                <h3 className="font-semibold">
-                                    Departments
+                                <h3 className="text-base font-semibold">
+                                    Organization
                                 </h3>
 
-                                <p className="text-sm text-muted-foreground">
-                                    Select all departments
-                                    this employee belongs to.
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Manage the employee's role
+                                    and department assignments.
                                 </p>
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="grid gap-6 sm:grid-cols-2">
 
-                                {departments.map(
-                                    (
-                                        department,
-                                    ) => {
-                                        const checked =
-                                            editDepartmentIds.includes(
-                                                department.id,
-                                            );
+                                {/* Role */}
 
-                                        return (
-                                            <button
-                                                type="button"
-                                                key={
-                                                    department.id
-                                                }
-                                                onClick={() =>
-                                                    toggleEditDepartment(
-                                                        department.id,
-                                                    )
-                                                }
-                                                disabled={
-                                                    editing
-                                                }
-                                                className="flex w-full items-center justify-between rounded-lg border p-3 text-left transition hover:bg-muted"
-                                            >
+                                <div className="space-y-2">
+                                    <Label>
+                                        Role
+                                    </Label>
 
-                                                <span className="text-sm font-medium">
-                                                    {
-                                                        department.name
-                                                    }
-                                                </span>
+                                    <Select
+                                        value={
+                                            editRoleId ||
+                                            undefined
+                                        }
+                                        onValueChange={
+                                            setEditRoleId
+                                        }
+                                        disabled={editing}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Select a role" />
+                                        </SelectTrigger>
 
-                                                <div
-                                                    className={`flex h-5 w-5 items-center justify-center rounded border ${checked
-                                                            ? "border-primary bg-primary text-primary-foreground"
-                                                            : "border-input"
-                                                        }`}
+                                        <SelectContent>
+                                            {roles.length ===
+                                                0 ? (
+                                                <SelectItem
+                                                    value="none"
+                                                    disabled
                                                 >
-                                                    {checked && (
-                                                        <Check className="h-3.5 w-3.5" />
+                                                    No roles available
+                                                </SelectItem>
+                                            ) : (
+                                                roles.map(
+                                                    (role) => (
+                                                        <SelectItem
+                                                            key={
+                                                                role.id
+                                                            }
+                                                            value={
+                                                                role.id
+                                                            }
+                                                        >
+                                                            {
+                                                                role.name
+                                                            }
+                                                        </SelectItem>
+                                                    ),
+                                                )
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Departments */}
+
+                                <div className="space-y-2">
+                                    <Label>
+                                        Departments
+                                    </Label>
+
+                                    <Popover>
+                                        <PopoverTrigger
+                                            asChild
+                                        >
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                role="combobox"
+                                                disabled={
+                                                    editing ||
+                                                    departments.length ===
+                                                    0
+                                                }
+                                                className="h-auto min-h-10 w-full justify-between px-3 py-2 font-normal"
+                                            >
+                                                <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+
+                                                    {editDepartmentIds.length ===
+                                                        0 ? (
+                                                        <span className="text-muted-foreground">
+                                                            Select departments
+                                                        </span>
+                                                    ) : (
+                                                        editDepartmentIds.map(
+                                                            (
+                                                                departmentId,
+                                                            ) => (
+                                                                <Badge
+                                                                    key={
+                                                                        departmentId
+                                                                    }
+                                                                    variant="secondary"
+                                                                    className="max-w-full"
+                                                                >
+                                                                    <span className="truncate">
+                                                                        {getDepartmentName(
+                                                                            departmentId,
+                                                                        )}
+                                                                    </span>
+                                                                </Badge>
+                                                            ),
+                                                        )
                                                     )}
+
                                                 </div>
-                                            </button>
-                                        );
-                                    },
-                                )}
+                                            </Button>
+                                        </PopoverTrigger>
+
+                                        <PopoverContent
+                                            align="start"
+                                            className="w-[var(--radix-popover-trigger-width)] p-0"
+                                        >
+                                            <Command>
+
+                                                <CommandInput placeholder="Search departments..." />
+
+                                                <CommandList>
+
+                                                    <CommandEmpty>
+                                                        No departments found.
+                                                    </CommandEmpty>
+
+                                                    <CommandGroup>
+                                                        {departments.map(
+                                                            (
+                                                                department,
+                                                            ) => {
+                                                                const checked =
+                                                                    editDepartmentIds.includes(
+                                                                        department.id,
+                                                                    );
+
+                                                                return (
+                                                                    <CommandItem
+                                                                        key={
+                                                                            department.id
+                                                                        }
+                                                                        value={
+                                                                            department.name
+                                                                        }
+                                                                        onSelect={() =>
+                                                                            toggleEditDepartment(
+                                                                                department.id,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <div
+                                                                            className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${checked
+                                                                                ? "border-primary bg-primary text-primary-foreground"
+                                                                                : "border-muted-foreground/30"
+                                                                                }`}
+                                                                        >
+                                                                            {checked && (
+                                                                                <Check className="h-3 w-3" />
+                                                                            )}
+                                                                        </div>
+
+                                                                        {
+                                                                            department.name
+                                                                        }
+                                                                    </CommandItem>
+                                                                );
+                                                            },
+                                                        )}
+                                                    </CommandGroup>
+
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+
+                                    <p className="text-xs text-muted-foreground">
+                                        Select all departments this
+                                        employee belongs to.
+                                    </p>
+                                </div>
+
                             </div>
-                        </div>
+
+                        </section>
 
                         <Separator />
 
-                        <div className="flex items-center justify-between rounded-lg border p-4">
+                        {/* Account status */}
+
+                        <section className="space-y-4">
 
                             <div>
-                                <p className="font-medium">
+                                <h3 className="text-base font-semibold">
                                     Account Status
-                                </p>
+                                </h3>
 
-                                <p className="text-sm text-muted-foreground">
-                                    Allow this employee
-                                    to sign in.
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Control whether this employee
+                                    can sign in to the workspace.
                                 </p>
                             </div>
 
-                            <Button
-                                type="button"
-                                variant={
-                                    editIsActive
-                                        ? "default"
-                                        : "secondary"
-                                }
-                                onClick={() =>
-                                    setEditIsActive(
-                                        (
-                                            current,
-                                        ) =>
-                                            !current,
-                                    )
-                                }
-                                disabled={
-                                    editing
-                                }
-                            >
-                                {editIsActive
-                                    ? "Active"
-                                    : "Inactive"}
-                            </Button>
-                        </div>
+                            <div className="flex items-center justify-between rounded-xl border bg-muted/20 p-4">
+
+                                <div className="flex items-center gap-3">
+
+                                    <div
+                                        className={`h-2.5 w-2.5 rounded-full ${editIsActive
+                                            ? "bg-green-500"
+                                            : "bg-muted-foreground"
+                                            }`}
+                                    />
+
+                                    <div>
+                                        <p className="font-medium">
+                                            {editIsActive
+                                                ? "Active account"
+                                                : "Inactive account"}
+                                        </p>
+
+                                        <p className="text-sm text-muted-foreground">
+                                            {editIsActive
+                                                ? "Employee can sign in."
+                                                : "Employee cannot sign in."}
+                                        </p>
+                                    </div>
+
+                                </div>
+
+                                <Button
+                                    type="button"
+                                    variant={
+                                        editIsActive
+                                            ? "default"
+                                            : "secondary"
+                                    }
+                                    onClick={() =>
+                                        setEditIsActive(
+                                            (current) =>
+                                                !current,
+                                        )
+                                    }
+                                    disabled={editing}
+                                >
+                                    {editIsActive
+                                        ? "Active"
+                                        : "Inactive"}
+                                </Button>
+
+                            </div>
+
+                        </section>
 
                         {editError && (
-                            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                                {
-                                    editError
-                                }
+                            <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                                {editError}
                             </div>
                         )}
+
                     </div>
 
-                    <DialogFooter>
+                    <DialogFooter className="border-t pt-5">
 
                         <Button
                             variant="outline"
                             onClick={() =>
-                                setEditDialogOpen(
-                                    false,
-                                )
+                                setEditDialogOpen(false)
                             }
-                            disabled={
-                                editing
-                            }
+                            disabled={editing}
                         >
                             Cancel
                         </Button>
@@ -1478,9 +1699,7 @@ export default function EmployeesPage() {
                             onClick={() =>
                                 void handleUpdateEmployee()
                             }
-                            disabled={
-                                editing
-                            }
+                            disabled={editing}
                         >
                             {editing ? (
                                 <>
@@ -1491,13 +1710,15 @@ export default function EmployeesPage() {
                                 "Save Changes"
                             )}
                         </Button>
+
                     </DialogFooter>
+
                 </DialogContent>
             </Dialog>
 
-            {/* ==============================================================
-                EMPLOYEE DETAILS
-            ============================================================== */}
+            {/* ============================================================== */}
+            {/* EMPLOYEE DETAILS                                               */}
+            {/* ============================================================== */}
 
             <Dialog
                 open={detailsDialogOpen}
@@ -1505,10 +1726,10 @@ export default function EmployeesPage() {
                     setDetailsDialogOpen
                 }
             >
-                <DialogContent className="sm:max-w-[600px]">
+                <DialogContent className="sm:max-w-3xl">
 
                     <DialogHeader>
-                        <DialogTitle>
+                        <DialogTitle className="text-xl">
                             Employee Profile
                         </DialogTitle>
 
@@ -1521,19 +1742,18 @@ export default function EmployeesPage() {
                     {selectedEmployee && (
                         <div className="space-y-6 py-4">
 
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4 rounded-xl border bg-muted/20 p-5">
 
-                                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary">
+                                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary">
                                     {selectedEmployee.fullName
                                         .trim()
-                                        .charAt(
-                                            0,
-                                        )
+                                        .charAt(0)
                                         .toUpperCase()}
                                 </div>
 
-                                <div>
-                                    <div className="flex items-center gap-2">
+                                <div className="min-w-0">
+
+                                    <div className="flex flex-wrap items-center gap-2">
 
                                         <h3 className="font-semibold">
                                             {
@@ -1552,6 +1772,7 @@ export default function EmployeesPage() {
                                                 ? "Active"
                                                 : "Inactive"}
                                         </Badge>
+
                                     </div>
 
                                     <p className="text-sm text-muted-foreground">
@@ -1559,12 +1780,13 @@ export default function EmployeesPage() {
                                             selectedEmployee.email
                                         }
                                     </p>
+
                                 </div>
                             </div>
 
                             <Separator />
 
-                            <div className="space-y-4">
+                            <div className="grid gap-6 sm:grid-cols-2">
 
                                 <div>
                                     <p className="text-sm text-muted-foreground">
@@ -1572,7 +1794,6 @@ export default function EmployeesPage() {
                                     </p>
 
                                     <div className="mt-2">
-
                                         {selectedEmployee.role ? (
                                             <Badge variant="outline">
                                                 {
@@ -1591,49 +1812,52 @@ export default function EmployeesPage() {
 
                                 <div>
                                     <p className="text-sm text-muted-foreground">
-                                        Departments
-                                    </p>
-
-                                    <div className="mt-2 flex flex-wrap gap-2">
-
-                                        {selectedEmployee.departments
-                                            ?.length ? (
-                                            selectedEmployee.departments.map(
-                                                (
-                                                    department,
-                                                ) => (
-                                                    <Badge
-                                                        key={
-                                                            department.id
-                                                        }
-                                                        variant="secondary"
-                                                    >
-                                                        {
-                                                            department.name
-                                                        }
-                                                    </Badge>
-                                                ),
-                                            )
-                                        ) : (
-                                            <span className="text-sm text-muted-foreground">
-                                                No departments assigned
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <p className="text-sm text-muted-foreground">
                                         Created
                                     </p>
 
-                                    <p className="mt-1 text-sm font-medium">
+                                    <p className="mt-2 text-sm font-medium">
                                         {new Date(
                                             selectedEmployee.createdAt,
                                         ).toLocaleDateString()}
                                     </p>
                                 </div>
+
                             </div>
+
+                            <div>
+                                <p className="text-sm text-muted-foreground">
+                                    Departments
+                                </p>
+
+                                <div className="mt-2 flex flex-wrap gap-2">
+
+                                    {selectedEmployee.departments
+                                        ?.length ? (
+                                        selectedEmployee.departments.map(
+                                            (
+                                                department,
+                                            ) => (
+                                                <Badge
+                                                    key={
+                                                        department.id
+                                                    }
+                                                    variant="secondary"
+                                                >
+                                                    {
+                                                        department.name
+                                                    }
+                                                </Badge>
+                                            ),
+                                        )
+                                    ) : (
+                                        <span className="text-sm text-muted-foreground">
+                                            No departments assigned
+                                        </span>
+                                    )}
+
+                                </div>
+                            </div>
+
                         </div>
                     )}
 
@@ -1665,9 +1889,12 @@ export default function EmployeesPage() {
                                 Edit Employee
                             </Button>
                         )}
+
                     </DialogFooter>
+
                 </DialogContent>
             </Dialog>
+
         </div>
     );
 }

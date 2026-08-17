@@ -234,7 +234,7 @@ export default function DepartmentsPage() {
                         payload,
                     );
 
-                if (response?.department) {
+            if (response?.department) {
                     setDepartments((current) =>
                         current.map((department) =>
                             department.id ===
@@ -354,8 +354,8 @@ export default function DepartmentsPage() {
                     >
                         <RefreshCw
                             className={`mr-2 h-4 w-4 ${refreshing
-                                    ? "animate-spin"
-                                    : ""
+                                ? "animate-spin"
+                                : ""
                                 }`}
                         />
 
