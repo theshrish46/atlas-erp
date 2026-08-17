@@ -8,6 +8,20 @@
       "when": 1786702254418,
       "tag": "0000_good_wild_pack",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786941781595,
+      "tag": "0001_easy_nocturne",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786942387310,
+      "tag": "0002_past_titanium_man",
+      "breakpoints": true
     }
   ]
 }

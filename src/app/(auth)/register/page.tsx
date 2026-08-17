@@ -45,7 +45,7 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            const result = await apiPost("/auth/register", formData);
+            const result = await apiPost("/api/auth/register", formData);
 
             console.log("Registration successful:", result);
 

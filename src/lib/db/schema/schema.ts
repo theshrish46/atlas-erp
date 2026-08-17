@@ -194,8 +194,7 @@ export const sessions = pgTable(
                 onDelete: "cascade",
             }),
 
-        tokenHash: varchar("token_hash", {
-            length: 255,
+        tokenHash: text("token_hash", {
         }).notNull(),
 
         expiresAt: timestamp("expires_at", {
@@ -320,8 +319,7 @@ export const invitations = pgTable(
             length: 255,
         }).notNull(),
 
-        tokenHash: varchar("token_hash", {
-            length: 255,
+        tokenHash: text("token_hash", {
         }).notNull(),
 
         expiresAt: timestamp("expires_at", {
@@ -357,8 +355,7 @@ export const passwordResetTokens = pgTable(
                 onDelete: "cascade",
             }),
 
-        tokenHash: varchar("token_hash", {
-            length: 255,
+        tokenHash: text("token_hash", {
         }).notNull(),
 
         expiresAt: timestamp("expires_at", {
@@ -382,8 +379,7 @@ export const emailVerificationTokens = pgTable(
                 onDelete: "cascade",
             }),
 
-        tokenHash: varchar("token_hash", {
-            length: 255,
+        tokenHash: text("token_hash", {
         }).notNull(),
 
         expiresAt: timestamp("expires_at", {

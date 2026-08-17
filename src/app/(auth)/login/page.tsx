@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Building2 } from "lucide-react";
 
@@ -13,8 +14,46 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { apiPost } from "@/lib/api/client";
 
 export default function LoginPage() {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    async function handleSubmit(
+        event: React.FormEvent<HTMLFormElement>
+    ) {
+        event.preventDefault();
+
+        setError("");
+        setLoading(true);
+
+        try {
+            const response = await apiPost("/api/auth/login", {
+                email,
+                password,
+            });
+
+            if (response?.token) {
+                localStorage.setItem("authToken", response.token);
+            }
+
+            window.location.href = "/dashboard";
+        } catch (error) {
+            console.error("Login error:", error);
+
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : "Unable to sign in. Please check your credentials."
+            );
+        } finally {
+            setLoading(false);
+        }
+    }
+
     return (
         <Card className="border-border/60 shadow-2xl backdrop-blur">
             <CardHeader className="space-y-3 pb-6">
@@ -34,7 +73,10 @@ export default function LoginPage() {
             </CardHeader>
 
             <CardContent>
-                <form className="space-y-6">
+                <form
+                    className="space-y-6"
+                    onSubmit={handleSubmit}
+                >
                     {/* Email */}
 
                     <div className="space-y-2">
@@ -47,6 +89,12 @@ export default function LoginPage() {
                             type="email"
                             placeholder="john@company.com"
                             autoComplete="email"
+                            value={email}
+                            onChange={(event) =>
+                                setEmail(event.target.value)
+                            }
+                            disabled={loading}
+                            required
                         />
                     </div>
 
@@ -71,6 +119,12 @@ export default function LoginPage() {
                             type="password"
                             placeholder="Enter your password"
                             autoComplete="current-password"
+                            value={password}
+                            onChange={(event) =>
+                                setPassword(event.target.value)
+                            }
+                            disabled={loading}
+                            required
                         />
                     </div>
 
@@ -82,21 +136,34 @@ export default function LoginPage() {
                                 type="checkbox"
                                 className="h-4 w-4 rounded border"
                             />
+
                             <span className="text-muted-foreground">
                                 Remember me
                             </span>
                         </label>
                     </div>
 
+                    {/* Error */}
+
+                    {error && (
+                        <p className="text-sm text-destructive">
+                            {error}
+                        </p>
+                    )}
+
                     {/* Login */}
 
                     <Button
+                        type="submit"
                         className="h-11 w-full text-base"
                         size="lg"
+                        disabled={loading}
                     >
-                        Sign In
+                        {loading ? "Signing In..." : "Sign In"}
 
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                        {!loading && (
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                        )}
                     </Button>
 
                     {/* Divider */}
