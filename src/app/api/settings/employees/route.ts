@@ -12,6 +12,7 @@ import {
     errorResponse,
 } from "@/lib/utils/api-response";
 import { z } from "zod";
+import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 
 const createEmployeeSchema = z.object({
     fullName: z
@@ -32,22 +33,6 @@ const createEmployeeSchema = z.object({
         .min(8, "Password must be at least 8 characters")
         .max(100),
 });
-
-async function getAuthenticatedUser(req: NextRequest) {
-    const authorization = req.headers.get("authorization");
-
-    if (!authorization?.startsWith("Bearer ")) {
-        return null;
-    }
-
-    const token = authorization.substring(7);
-
-    try {
-        return await verifyAccessToken(token);
-    } catch {
-        return null;
-    }
-}
 
 export async function GET(req: NextRequest) {
     try {

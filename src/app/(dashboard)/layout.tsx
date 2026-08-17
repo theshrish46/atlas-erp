@@ -15,7 +15,6 @@ import {
     LayoutDashboard,
     Menu,
     Package,
-    PanelLeft,
     Settings,
     ShoppingCart,
     Users,
@@ -166,7 +165,11 @@ export default function DashboardLayout({
                                 key={item.href}
                                 href={item.href}
                                 onClick={() => setMobileOpen(false)}
-                                title={collapsed ? item.title : undefined}
+                                title={
+                                    collapsed
+                                        ? item.title
+                                        : undefined
+                                }
                                 className={`
                                     group flex items-center rounded-lg
                                     text-sm font-medium
@@ -194,7 +197,11 @@ export default function DashboardLayout({
                 <div className="space-y-1 border-t p-3">
                     <Link
                         href="/dashboard/settings"
-                        title={collapsed ? "Settings" : undefined}
+                        title={
+                            collapsed
+                                ? "Settings"
+                                : undefined
+                        }
                         className={`
                             flex items-center rounded-lg
                             text-sm font-medium
@@ -252,7 +259,11 @@ export default function DashboardLayout({
                         </DropdownMenuTrigger>
 
                         <DropdownMenuContent
-                            side={collapsed ? "right" : "top"}
+                            side={
+                                collapsed
+                                    ? "right"
+                                    : "top"
+                            }
                             align="end"
                             className="w-56"
                         >
@@ -306,7 +317,9 @@ export default function DashboardLayout({
                         size="icon"
                         className="hidden lg:flex"
                         onClick={() =>
-                            setCollapsed((value) => !value)
+                            setCollapsed(
+                                (value) => !value,
+                            )
                         }
                         title={
                             collapsed
@@ -327,7 +340,9 @@ export default function DashboardLayout({
                         variant="ghost"
                         size="icon"
                         className="lg:hidden"
-                        onClick={() => setMobileOpen(true)}
+                        onClick={() =>
+                            setMobileOpen(true)
+                        }
                     >
                         <Menu className="h-5 w-5" />
                     </Button>
@@ -352,11 +367,7 @@ export default function DashboardLayout({
                     {/* Navbar Actions */}
 
                     <div className="flex items-center gap-1">
-                        {/* Theme */}
-
                         <ThemeToggle />
-
-                        {/* Notifications */}
 
                         <Button
                             variant="ghost"
@@ -399,6 +410,7 @@ export default function DashboardLayout({
                             >
                                 <DropdownMenuLabel>
                                     John Doe
+
                                     <p className="mt-1 font-normal text-muted-foreground">
                                         john@company.com
                                     </p>
