@@ -42,38 +42,28 @@ const navigation = [
         icon: LayoutDashboard,
     },
     {
-        title: "Sales",
-        href: "/dashboard/sales",
-        icon: CircleDollarSign,
-    },
-    {
         title: "Purchases",
-        href: "/dashboard/purchases",
+        href: "/purchases",
         icon: ShoppingCart,
     },
     {
+        title: "Sales",
+        href: "/sales",
+        icon: CircleDollarSign,
+    },
+    {
         title: "Inventory",
-        href: "/dashboard/inventory",
+        href: "/inventory",
         icon: Boxes,
     },
     {
-        title: "Products",
-        href: "/dashboard/products",
-        icon: Package,
-    },
-    {
-        title: "Finance",
-        href: "/dashboard/finance",
-        icon: BarChart3,
-    },
-    {
-        title: "HR",
-        href: "/dashboard/hr",
+        title: "CRM",
+        href: "/crm",
         icon: Users,
     },
     {
         title: "Reports",
-        href: "/dashboard/reports",
+        href: "/reports",
         icon: FileText,
     },
 ];
@@ -196,12 +186,8 @@ export default function DashboardLayout({
 
                 <div className="space-y-1 border-t p-3">
                     <Link
-                        href="/dashboard/settings"
-                        title={
-                            collapsed
-                                ? "Settings"
-                                : undefined
-                        }
+                        href="/settings"
+                        title={collapsed ? "Settings" : undefined}
                         className={`
                             flex items-center rounded-lg
                             text-sm font-medium
@@ -212,7 +198,7 @@ export default function DashboardLayout({
                                 ? "justify-center px-2 py-2.5"
                                 : "gap-3 px-3 py-2.5"
                             }
-                        `}
+                            `}
                     >
                         <Settings className="h-5 w-5 shrink-0" />
 
