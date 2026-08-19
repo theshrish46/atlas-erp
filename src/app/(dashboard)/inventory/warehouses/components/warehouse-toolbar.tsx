@@ -12,7 +12,7 @@ import {
     RotateCcw,
     Rows3,
     Ruler,
-    Shelves,
+    LibraryBig,
     SquareDashed,
     Warehouse,
     ZoomIn,
@@ -75,10 +75,10 @@ function ToolButton({
                     size="icon"
                     onClick={onClick}
                     className={[
-                        "relative h-10 w-10 shrink-0 rounded-lg",
+                        "relative h-9 w-9 shrink-0 rounded-lg",
                         "transition-all duration-150",
                         active
-                            ? "bg-primary/10 text-primary shadow-sm hover:bg-primary/15"
+                            ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
                             : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     ].join(" ")}
                 >
@@ -122,14 +122,15 @@ export default function WarehouseToolbox({
 }: WarehouseToolboxProps) {
     return (
         <TooltipProvider delayDuration={350}>
-            <div className="pointer-events-none absolute inset-x-0 top-5 z-40 flex justify-center">
+            <div className="pointer-events-none absolute inset-x-0 bottom-6 z-40 flex justify-center">
                 <div
                     className={[
                         "pointer-events-auto",
-                        "flex items-center gap-1",
-                        "rounded-xl border bg-background/95 p-1.5",
-                        "shadow-xl shadow-black/10",
-                        "backdrop-blur-md",
+                        "flex items-center gap-0.5",
+                        "rounded-2xl border bg-background/95 p-1.5",
+                        "shadow-2xl shadow-black/15",
+                        "backdrop-blur-xl",
+                        "ring-1 ring-black/5",
                     ].join(" ")}
                 >
                     {/* -------------------------------------------------- */}
@@ -224,7 +225,7 @@ export default function WarehouseToolbox({
                         label="Shelf"
                         shortcut="2"
                         icon={
-                            <Shelves className="h-[18px] w-[18px]" />
+                            <LibraryBig className="h-[18px] w-[18px]" />
                         }
                         active={activeTool === "shelf"}
                         onClick={() =>
