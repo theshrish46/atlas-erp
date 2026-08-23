@@ -753,14 +753,14 @@ export default function StockMovementsPage() {
                                             <TableCell>
                                                 <span
                                                     className={`font-semibold ${movement.movementType ===
-                                                            "receipt" ||
-                                                            movement.movementType ===
-                                                            "return"
-                                                            ? "text-emerald-600"
-                                                            : movement.movementType ===
-                                                                "issue"
-                                                                ? "text-red-600"
-                                                                : ""
+                                                        "receipt" ||
+                                                        movement.movementType ===
+                                                        "return"
+                                                        ? "text-emerald-600"
+                                                        : movement.movementType ===
+                                                            "issue"
+                                                            ? "text-red-600"
+                                                            : ""
                                                         }`}
                                                 >
                                                     {movement.movementType ===

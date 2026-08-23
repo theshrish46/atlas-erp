@@ -15,6 +15,7 @@ import {
     LayoutDashboard,
     Menu,
     Package,
+    User,
     Settings,
     ShoppingCart,
     Users,
@@ -57,14 +58,9 @@ const navigation = [
         icon: Boxes,
     },
     {
-        title: "CRM",
-        href: "/crm",
-        icon: Users,
-    },
-    {
-        title: "Reports",
-        href: "/reports",
-        icon: FileText,
+        title: "Profile",
+        href: "/profile",
+        icon: User,
     },
 ];
 
