@@ -314,19 +314,15 @@ export default function WarehousePage() {
         elementId: string,
         updates: Partial<WarehouseElement>,
     ) {
-
-        setElements(
-            (current) =>
-                current.map(
-                    (element) =>
-                        element.id ===
-                            elementId
-                            ? {
-                                ...element,
-                                ...updates,
-                            }
-                            : element,
-                ),
+        setElements((current) =>
+            current.map((element) =>
+                element.id === elementId
+                    ? {
+                        ...element,
+                        ...updates,
+                    }
+                    : element,
+            ),
         );
     }
 
@@ -415,57 +411,19 @@ export default function WarehousePage() {
          * ================================================================= */}
 
             <WarehouseCanvas
-                activeTool={
-                    activeTool
-                }
-
-                zoom={
-                    zoom
-                }
-
-                offsetX={
-                    offsetX
-                }
-
-                offsetY={
-                    offsetY
-                }
-
-                isSpacePressed={
-                    isSpacePressed
-                }
-
-                elements={
-                    elements
-                }
-
-                selectedElementId={
-                    selectedElementId
-                }
-
-                onElementsChange={
-                    setElements
-                }
-
-                onElementSelect={
-                    handleElementSelect
-                }
-
-                onOffsetChange={
-                    (
-                        nextX,
-                        nextY,
-                    ) => {
-
-                        setOffsetX(
-                            nextX,
-                        );
-
-                        setOffsetY(
-                            nextY,
-                        );
-                    }
-                }
+                activeTool={activeTool}
+                zoom={zoom}
+                offsetX={offsetX}
+                offsetY={offsetY}
+                isSpacePressed={isSpacePressed}
+                elements={elements}
+                selectedElementId={selectedElementId}
+                onElementsChange={setElements}
+                onElementSelect={handleElementSelect}
+                onOffsetChange={(nextX, nextY) => {
+                    setOffsetX(nextX);
+                    setOffsetY(nextY);
+                }}
             />
 
 
@@ -474,18 +432,9 @@ export default function WarehousePage() {
          * ================================================================= */}
 
             <WarehouseToolbox
-                activeTool={
-                    activeTool
-                }
-
-                onToolChange={
-                    handleToolChange
-                }
-
-                zoom={
-                    zoom
-                }
-
+                activeTool={activeTool}
+                onToolChange={handleToolChange}
+                zoom={zoom}
                 onZoomIn={() =>
                     setZoom(
                         (current) =>
@@ -507,11 +456,8 @@ export default function WarehousePage() {
                 }
 
                 onResetView={() => {
-
                     setZoom(1);
-
                     setOffsetX(0);
-
                     setOffsetY(0);
                 }}
 
@@ -521,11 +467,6 @@ export default function WarehousePage() {
                     )
                 }
             />
-
-
-            {/* =================================================================
-         * FULLSCREEN BUTTON
-         * ================================================================= */}
 
             <div className="absolute right-4 top-4 z-40">
 
@@ -538,11 +479,7 @@ export default function WarehousePage() {
                                 !current,
                         )
                     }
-                    title={
-                        isFullscreen
-                            ? "Exit fullscreen"
-                            : "Enter fullscreen"
-                    }
+                    title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
                 >
 
                     {isFullscreen ? (
@@ -562,64 +499,17 @@ export default function WarehousePage() {
             </div>
 
 
-            {/* =================================================================
-         * ELEMENT PROPERTIES PANEL
-         * ================================================================= */}
-
             {selectedElement && (
 
                 <aside
-                    className="
-                    absolute
-                    right-4
-                    top-16
-                    z-40
-                    w-72
-                    rounded-xl
-                    border
-                    bg-background/95
-                    p-4
-                    shadow-2xl
-                    backdrop-blur
-                "
-                >
+                    className="absolute right-4 top-16 z-40 flex max-h-[calc(100%-5rem)] w-80 flex-col overflow-hidden rounded-xl border bg-background/95 shadow-2xl backdrop-blur">
 
-                    {/* ---------------------------------------------------------
-                 * Header
-                 * ------------------------------------------------------ */}
 
-                    <div
-                        className="
-                        mb-5
-                        flex
-                        items-start
-                        justify-between
-                    "
-                    >
-
-                        <div>
-
-                            <p
-                                className="
-                                text-sm
-                                font-semibold
-                            "
-                            >
-                                Element Properties
-                            </p>
-
-                            <p
-                                className="
-                                mt-1
-                                text-xs
-                                text-muted-foreground
-                            "
-                            >
-                                {selectedElement.type}
-                            </p>
-
+                    <div className="mb-5 flex items-start justify-between">
+                        <div className="p-2">
+                            <p className="text-sm font-semibold">Element Properties</p>
+                            <p className="mt-1 text-xs text-muted-foreground">{selectedElement.type}</p>
                         </div>
-
 
                         <Button
                             variant="ghost"
@@ -633,149 +523,194 @@ export default function WarehousePage() {
                         >
                             <X className="h-4 w-4" />
 
-                            <span className="sr-only">
-                                Close properties
-                            </span>
+                            <span className="sr-only">Close properties</span>
                         </Button>
 
                     </div>
 
 
-                    {/* ---------------------------------------------------------
-                 * Element Name
-                 * ------------------------------------------------------ */}
+                    <div className="flex-1 overflow-y-auto p-4">
 
-                    <div className="space-y-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="element-name">Name</Label>
 
-                        <Label
-                            htmlFor="element-name"
-                        >
-                            Name
-                        </Label>
+                            <Input
+                                id="element-name"
+                                value={selectedElement.label ?? ""}
+                                placeholder={`${selectedElement.type}-001`}
+                                onChange={(event) =>
+                                    updateElement(
+                                        selectedElement.id,
+                                        {
+                                            label: event.target.value,
+                                        },
+                                    )
+                                }
+                            />
 
-                        <Input
-                            id="element-name"
-                            value={
-                                selectedElement.elementName ??
-                                ""
-                            }
-                            placeholder={
-                                "Enter element name"
-                            }
-                            onChange={(event) =>
-                                updateElement(
-                                    selectedElement.id,
-                                    {
-                                        elementName:
-                                            event
-                                                .target
-                                                .value,
-                                    },
-                                )
-                            }
-                        />
+                        </div>
 
-                    </div>
+                        <div className="space-y-2 my-4">
+                            <Label htmlFor="element-name">Assigned Work</Label>
 
+                            <Input
+                                id="assigned-work"
+                                value={selectedElement.assignedWork ?? ""}
+                                placeholder="e.g. Packaging of Drivers"
+                                onChange={(event) =>
+                                    updateElement(
+                                        selectedElement.id,
+                                        {
+                                            assignedWork: event.target.value,
+                                        },
+                                    )
+                                }
+                            />
 
-                    {/* ---------------------------------------------------------
-                 * Position
-                 * ------------------------------------------------------ */}
+                        </div>
 
-                    <div className="mt-5">
+                        <div className="space-y-2 my-4">
+                            <Label htmlFor="element-name">SKU</Label>
 
-                        <p
-                            className="
-                            mb-3
-                            text-xs
-                            font-medium
-                            uppercase
-                            tracking-wide
-                            text-muted-foreground
-                        "
-                        >
-                            Position
-                        </p>
+                            <Input
+                                id="element-sku"
+                                value={selectedElement.sku ?? ""}
+                                placeholder="e.g. DRV-2401"
+                                onChange={(event) =>
+                                    updateElement(
+                                        selectedElement.id,
+                                        {
+                                            sku: event.target.value,
+                                        },
+                                    )
+                                }
+                            />
+
+                        </div>
 
 
-                        <div
-                            className="
-                            grid
-                            grid-cols-2
-                            gap-3
-                        "
-                        >
+                        <div className="space-y-2 my-4">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <Label htmlFor="element-quantity">
+                                        Quantity
+                                    </Label>
 
-                            <div className="space-y-2">
+                                    <Input
+                                        id="element-quantity"
+                                        type="number"
+                                        min="0"
+                                        value={selectedElement.quantity ?? ""}
+                                        onChange={(event) =>
+                                            updateElement(
+                                                selectedElement.id,
+                                                {
+                                                    quantity:
+                                                        event.target.value === ""
+                                                            ? undefined
+                                                            : Number(event.target.value),
+                                                },
+                                            )
+                                        }
+                                    />
+                                </div>
 
-                                <Label
-                                    htmlFor="element-x"
-                                >
-                                    X
-                                </Label>
+                                <div>
+                                    <Label htmlFor="element-unit">Unit</Label>
 
-                                <Input
-                                    id="element-x"
-                                    type="number"
-                                    value={
-                                        selectedElement.x
-                                    }
-                                    onChange={(
-                                        event,
-                                    ) =>
-                                        updateNumber(
-                                            "x",
-                                            event
-                                                .target
-                                                .value,
-                                        )
-                                    }
-                                />
-
+                                    <Input
+                                        id="element-unit"
+                                        value={selectedElement.unit ?? ""}
+                                        placeholder="pcs"
+                                        onChange={(event) =>
+                                            updateElement(
+                                                selectedElement.id,
+                                                {
+                                                    unit: event.target.value,
+                                                },
+                                            )
+                                        }
+                                    />
+                                </div>
                             </div>
 
+                        </div>
+                        <div className="mt-3">
+                            <Label htmlFor="element-notes">Notes</Label>
 
-                            <div className="space-y-2">
+                            <textarea
+                                id="element-notes"
+                                value={selectedElement.notes ?? ""}
+                                placeholder="Additional warehouse information..."
+                                onChange={(event) =>
+                                    updateElement(
+                                        selectedElement.id,
+                                        {
+                                            notes: event.target.value,
+                                        },
+                                    )
+                                }
+                                className="mt-1 min-h-[70px] w-full resize-none rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                            />
+                        </div>
 
-                                <Label
-                                    htmlFor="element-y"
-                                >
-                                    Y
-                                </Label>
+                        <div className="mt-5">
+                            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Position</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                    <Label htmlFor="element-x">X</Label>
 
-                                <Input
-                                    id="element-y"
-                                    type="number"
-                                    value={
-                                        selectedElement.y
-                                    }
-                                    onChange={(
-                                        event,
-                                    ) =>
-                                        updateNumber(
-                                            "y",
-                                            event
-                                                .target
-                                                .value,
-                                        )
-                                    }
-                                />
+                                    <Input
+                                        id="element-x"
+                                        type="number"
+                                        value={selectedElement.x}
+                                        onChange={(event) => updateNumber("x", event.target.value)}
+                                    />
+
+                                </div>
+
+
+                                <div className="space-y-2">
+
+                                    <Label
+                                        htmlFor="element-y"
+                                    >
+                                        Y
+                                    </Label>
+
+                                    <Input
+                                        id="element-y"
+                                        type="number"
+                                        value={
+                                            selectedElement.y
+                                        }
+                                        onChange={(
+                                            event,
+                                        ) =>
+                                            updateNumber(
+                                                "y",
+                                                event
+                                                    .target
+                                                    .value,
+                                            )
+                                        }
+                                    />
+
+                                </div>
 
                             </div>
 
                         </div>
 
-                    </div>
 
-
-                    {/* ---------------------------------------------------------
+                        {/* ---------------------------------------------------------
                  * Dimensions
                  * ------------------------------------------------------ */}
 
-                    <div className="mt-5">
+                        <div className="mt-5">
 
-                        <p
-                            className="
+                            <p
+                                className="
                             mb-3
                             text-xs
                             font-medium
@@ -783,147 +718,149 @@ export default function WarehousePage() {
                             tracking-wide
                             text-muted-foreground
                         "
-                        >
-                            Dimensions
-                        </p>
+                            >
+                                Dimensions
+                            </p>
 
 
-                        <div
-                            className="
+                            <div
+                                className="
                             grid
                             grid-cols-2
                             gap-3
                         "
-                        >
+                            >
 
-                            <div className="space-y-2">
+                                <div className="space-y-2">
 
-                                <Label
-                                    htmlFor="element-width"
-                                >
-                                    Width
-                                </Label>
+                                    <Label
+                                        htmlFor="element-width"
+                                    >
+                                        Width
+                                    </Label>
 
-                                <Input
-                                    id="element-width"
-                                    type="number"
-                                    min="1"
-                                    value={
-                                        selectedElement.width
-                                    }
-                                    onChange={(
-                                        event,
-                                    ) =>
-                                        updateNumber(
-                                            "width",
-                                            event
-                                                .target
-                                                .value,
-                                        )
-                                    }
-                                />
+                                    <Input
+                                        id="element-width"
+                                        type="number"
+                                        min="1"
+                                        value={
+                                            selectedElement.width
+                                        }
+                                        onChange={(
+                                            event,
+                                        ) =>
+                                            updateNumber(
+                                                "width",
+                                                event
+                                                    .target
+                                                    .value,
+                                            )
+                                        }
+                                    />
 
-                            </div>
+                                </div>
 
 
-                            <div className="space-y-2">
+                                <div className="space-y-2">
 
-                                <Label
-                                    htmlFor="element-height"
-                                >
-                                    Height
-                                </Label>
+                                    <Label
+                                        htmlFor="element-height"
+                                    >
+                                        Height
+                                    </Label>
 
-                                <Input
-                                    id="element-height"
-                                    type="number"
-                                    min="1"
-                                    value={
-                                        selectedElement.height
-                                    }
-                                    onChange={(
-                                        event,
-                                    ) =>
-                                        updateNumber(
-                                            "height",
-                                            event
-                                                .target
-                                                .value,
-                                        )
-                                    }
-                                />
+                                    <Input
+                                        id="element-height"
+                                        type="number"
+                                        min="1"
+                                        value={
+                                            selectedElement.height
+                                        }
+                                        onChange={(
+                                            event,
+                                        ) =>
+                                            updateNumber(
+                                                "height",
+                                                event
+                                                    .target
+                                                    .value,
+                                            )
+                                        }
+                                    />
+
+                                </div>
 
                             </div>
 
                         </div>
 
-                    </div>
 
-
-                    {/* ---------------------------------------------------------
+                        {/* ---------------------------------------------------------
                  * Location Code
                  * ------------------------------------------------------ */}
 
-                    <div className="mt-5 space-y-2">
+                        <div className="mt-5 space-y-2">
 
-                        <Label
-                            htmlFor="location-code"
-                        >
-                            Location Code
-                        </Label>
+                            <Label
+                                htmlFor="location-code"
+                            >
+                                Location Code
+                            </Label>
 
-                        <Input
-                            id="location-code"
-                            value={
-                                selectedElement.locationCode ??
-                                ""
-                            }
-                            placeholder="e.g. A-01"
-                            onChange={(event) =>
-                                updateElement(
-                                    selectedElement.id,
-                                    {
-                                        locationCode:
-                                            event
-                                                .target
-                                                .value,
-                                    },
-                                )
-                            }
-                        />
+                            <Input
+                                id="location-code"
+                                value={
+                                    selectedElement.locationCode ??
+                                    ""
+                                }
+                                placeholder="e.g. A-01"
+                                onChange={(event) =>
+                                    updateElement(
+                                        selectedElement.id,
+                                        {
+                                            locationCode:
+                                                event
+                                                    .target
+                                                    .value,
+                                        },
+                                    )
+                                }
+                            />
 
-                    </div>
+                        </div>
 
 
-                    {/* ---------------------------------------------------------
+                        {/* ---------------------------------------------------------
                  * Delete
                  * ------------------------------------------------------ */}
 
-                    <div
-                        className="
+                        <div
+                            className="
                         mt-6
                         border-t
                         pt-4
                     "
-                    >
-
-                        <Button
-                            variant="destructive"
-                            className="w-full"
-                            onClick={
-                                deleteSelectedElement
-                            }
                         >
-                            Delete Element
-                        </Button>
+
+                            <Button
+                                variant="destructive"
+                                className="w-full"
+                                onClick={
+                                    deleteSelectedElement
+                                }
+                            >
+                                Delete Element
+                            </Button>
+
+                        </div>
 
                     </div>
-
                 </aside>
 
-            )}
+            )
+            }
 
-        </main>
+        </main >
     );
 
 }

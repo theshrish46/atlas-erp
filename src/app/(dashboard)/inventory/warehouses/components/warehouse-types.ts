@@ -145,77 +145,33 @@ export interface WarehouseToolDefinition {
 
 export interface WarehouseElement {
     id: string;
-    elementName: string;
 
     type: WarehouseElementType;
 
-    /**
-     * Position in logical canvas coordinates.
-     */
     x: number;
-
     y: number;
 
-    /**
-     * Logical dimensions.
-     */
     width: number;
-
     height: number;
 
-    /**
-     * Rotation in degrees.
-     */
     rotation: number;
 
-    /**
-     * Name shown on the warehouse plan.
-     *
-     * Example:
-     * "Rack A-01"
-     * "Assembly Area 4"
-     * "Receiving Shelf"
-     */
     label?: string;
 
-    /**
-     * Optional value assigned to this warehouse object.
-     *
-     * Examples:
-     *
-     * SKU:
-     * "SCR-001"
-     *
-     * Item:
-     * "Stainless Steel Screws"
-     *
-     * Work:
-     * "Packaging of Drivers"
-     */
-    assignment?: string;
+    assignedWork?: string;
 
-    /**
-     * Optional SKU / item code.
-     */
     sku?: string;
 
-    /**
-     * Optional warehouse location code.
-     *
-     * Examples:
-     *
-     * A-01
-     * R01-L03
-     * Z-RECEIVING
-     */
+    quantity?: number;
+
+    unit?: string;
+
     locationCode?: string;
 
-    /**
-     * Additional object-specific configuration.
-     */
+    notes?: string;
+
     properties?: Record<string, unknown>;
 }
-
 
 /* =============================================================================
  * TOOL DEFINITIONS
@@ -590,7 +546,6 @@ export function createWarehouseElement(
 
     return {
         id: crypto.randomUUID(),
-        elementName: "",
         type,
 
         x:
@@ -609,7 +564,7 @@ export function createWarehouseElement(
 
         label: "",
 
-        assignment: "",
+        assignedWork: "",
 
         sku: "",
 

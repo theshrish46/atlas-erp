@@ -25,11 +25,13 @@ type WarehouseCanvasProps = {
     offsetX: number;
     offsetY: number;
     isSpacePressed: boolean;
-
-    onOffsetChange: (
-        x: number,
-        y: number,
-    ) => void;
+    elements: WarehouseElement[];
+    selectedElementId: string | null;
+    onElementsChange: React.Dispatch<
+        React.SetStateAction<WarehouseElement[]>
+    >;
+    onElementSelect: (elementId: string | null) => void;
+    onOffsetChange: (x: number, y: number) => void;
 };
 
 type ResizeHandle =
@@ -87,19 +89,12 @@ const SHORTCUT_TO_ELEMENT: Record<
 function getElementName(
     element: WarehouseElement,
 ): string {
-    const properties =
-        element.properties ?? {};
+    const properties = element.properties ?? {};
 
     return (
-        element.elementName ||
         element.label ||
-        String(
-            properties.elementName ??
-            "",
-        ) ||
-        WAREHOUSE_TOOL_MAP[
-            element.type
-        ]?.label ||
+        String(properties.elementName ?? "") ||
+        WAREHOUSE_TOOL_MAP[element.type]?.label ||
         element.type
     );
 }
@@ -107,8 +102,7 @@ function getElementName(
 function getAssignment(
     element: WarehouseElement,
 ): string {
-    const properties =
-        element.properties ?? {};
+    const properties = element.properties ?? {};
 
     return String(
         properties.assignment ??
@@ -117,54 +111,35 @@ function getAssignment(
     );
 }
 
-function getSku(
-    element: WarehouseElement,
-): string {
-    const properties =
-        element.properties ?? {};
-
-    return String(
-        properties.sku ?? "",
-    );
-}
-
 function getNextElementName(
     type: WarehouseElementType,
     elements: WarehouseElement[],
 ): string {
-    const definition =
-        WAREHOUSE_TOOL_MAP[type];
+    const definition = WAREHOUSE_TOOL_MAP[type];
 
     const baseName =
-        definition?.label ??
-        type;
+        definition?.label ?? type;
 
-    const normalizedBase =
-        baseName
-            .replace(/\s+/g, "-")
-            .toLowerCase();
+    const normalizedBase = baseName
+        .replace(/\s+/g, "-")
+        .toLowerCase();
 
-    const matchingNumbers =
-        elements
-            .filter(
-                (element) =>
-                    element.type === type,
-            )
-            .map((element) => {
-                const name =
-                    getElementName(
-                        element,
-                    );
+    const matchingNumbers = elements
+        .filter(
+            (element) =>
+                element.type === type,
+        )
+        .map((element) => {
+            const name = getElementName(element);
 
-                const match =
-                    name.match(
-                        /-(\d+)$/,
-                    );
+            const match = name.match(
+                /-(\d+)$/,
+            );
 
-                return match
-                    ? Number(match[1])
-                    : 0;
-            });
+            return match
+                ? Number(match[1])
+                : 0;
+        });
 
     const nextNumber =
         Math.max(
@@ -187,33 +162,23 @@ export default function WarehouseCanvas({
     offsetX,
     offsetY,
     isSpacePressed,
+    elements,
+    selectedElementId,
+    onElementsChange,
+    onElementSelect,
     onOffsetChange,
 }: WarehouseCanvasProps) {
     const canvasRef =
-        useRef<HTMLDivElement | null>(
-            null,
-        );
-
-    const [elements, setElements] =
-        useState<WarehouseElement[]>(
-            [],
-        );
-
-    const [selectedId, setSelectedId] =
-        useState<string | null>(null);
+        useRef<HTMLDivElement | null>(null);
 
     const [interaction, setInteraction] =
         useState<Interaction>(null);
 
     const [history, setHistory] =
-        useState<WarehouseElement[][]>(
-            [],
-        );
+        useState<WarehouseElement[][]>([]);
 
     const [future, setFuture] =
-        useState<WarehouseElement[][]>(
-            [],
-        );
+        useState<WarehouseElement[][]>([]);
 
     const panStartRef = useRef({
         mouseX: 0,
@@ -236,20 +201,16 @@ export default function WarehouseCanvas({
         (
             nextElements: WarehouseElement[],
         ) => {
-            setHistory(
-                (current) => [
-                    ...current,
-                    elements,
-                ],
-            );
+            setHistory((current) => [
+                ...current,
+                elements,
+            ]);
 
             setFuture([]);
 
-            setElements(
-                nextElements,
-            );
+            onElementsChange(nextElements);
         },
-        [elements],
+        [elements, onElementsChange],
     );
 
     const undo = useCallback(() => {
@@ -258,28 +219,24 @@ export default function WarehouseCanvas({
         }
 
         const previous =
-            history[
-            history.length - 1
-            ];
+            history[history.length - 1];
 
-        setHistory(
-            (current) =>
-                current.slice(0, -1),
+        setHistory((current) =>
+            current.slice(0, -1),
         );
 
-        setFuture(
-            (current) => [
-                ...current,
-                elements,
-            ],
-        );
+        setFuture((current) => [
+            ...current,
+            elements,
+        ]);
 
-        setElements(previous);
-
-        setSelectedId(null);
+        onElementsChange(previous);
+        onElementSelect(null);
     }, [
         elements,
         history,
+        onElementsChange,
+        onElementSelect,
     ]);
 
     const redo = useCallback(() => {
@@ -288,26 +245,22 @@ export default function WarehouseCanvas({
         }
 
         const next =
-            future[
-            future.length - 1
-            ];
+            future[future.length - 1];
 
-        setFuture(
-            (current) =>
-                current.slice(0, -1),
+        setFuture((current) =>
+            current.slice(0, -1),
         );
 
-        setHistory(
-            (current) => [
-                ...current,
-                elements,
-            ],
-        );
+        setHistory((current) => [
+            ...current,
+            elements,
+        ]);
 
-        setElements(next);
+        onElementsChange(next);
     }, [
         elements,
         future,
+        onElementsChange,
     ]);
 
     /* =========================================================================
@@ -322,21 +275,19 @@ export default function WarehouseCanvas({
                 event.target as HTMLElement | null;
 
             const isTyping =
-                target?.tagName ===
-                "INPUT" ||
-                target?.tagName ===
-                "TEXTAREA" ||
+                target?.tagName === "INPUT" ||
+                target?.tagName === "TEXTAREA" ||
                 target?.isContentEditable;
 
-            /*
-             * Undo / redo should still work while the user is not typing.
-             */
+            /* -----------------------------------------------------------------
+             * UNDO / REDO
+             * ----------------------------------------------------------------- */
+
             if (
                 !isTyping &&
                 (event.ctrlKey ||
                     event.metaKey) &&
-                event.key.toLowerCase() ===
-                "z"
+                event.key.toLowerCase() === "z"
             ) {
                 event.preventDefault();
 
@@ -353,32 +304,30 @@ export default function WarehouseCanvas({
                 !isTyping &&
                 (event.ctrlKey ||
                     event.metaKey) &&
-                event.key.toLowerCase() ===
-                "y"
+                event.key.toLowerCase() === "y"
             ) {
                 event.preventDefault();
-
                 redo();
-
                 return;
             }
 
-            /*
-             * Never hijack keyboard input while editing
-             * a property.
-             */
+            /* -----------------------------------------------------------------
+             * NEVER HIJACK TEXT INPUT
+             * ----------------------------------------------------------------- */
+
             if (isTyping) {
                 return;
             }
 
-            /*
-             * Delete selected element.
-             */
+            /* -----------------------------------------------------------------
+             * DELETE SELECTED ELEMENT
+             * ----------------------------------------------------------------- */
+
             if (
                 event.key === "Delete" ||
                 event.key === "Backspace"
             ) {
-                if (!selectedId) {
+                if (!selectedElementId) {
                     return;
                 }
 
@@ -388,21 +337,21 @@ export default function WarehouseCanvas({
                     elements.filter(
                         (element) =>
                             element.id !==
-                            selectedId,
+                            selectedElementId,
                     ),
                 );
 
-                setSelectedId(null);
+                onElementSelect(null);
 
                 return;
             }
 
-            /*
-             * V = Select
-             */
+            /* -----------------------------------------------------------------
+             * V = SELECT
+             * ----------------------------------------------------------------- */
+
             if (
-                event.key.toLowerCase() ===
-                "v"
+                event.key.toLowerCase() === "v"
             ) {
                 event.preventDefault();
 
@@ -418,12 +367,12 @@ export default function WarehouseCanvas({
                 return;
             }
 
-            /*
-             * H = Hand
-             */
+            /* -----------------------------------------------------------------
+             * H = HAND
+             * ----------------------------------------------------------------- */
+
             if (
-                event.key.toLowerCase() ===
-                "h"
+                event.key.toLowerCase() === "h"
             ) {
                 event.preventDefault();
 
@@ -439,13 +388,12 @@ export default function WarehouseCanvas({
                 return;
             }
 
-            /*
-             * Number shortcuts.
-             */
+            /* -----------------------------------------------------------------
+             * NUMBER SHORTCUTS
+             * ----------------------------------------------------------------- */
+
             const elementType =
-                SHORTCUT_TO_ELEMENT[
-                event.key
-                ];
+                SHORTCUT_TO_ELEMENT[event.key];
 
             if (elementType) {
                 event.preventDefault();
@@ -454,8 +402,7 @@ export default function WarehouseCanvas({
                     new CustomEvent(
                         "warehouse-tool-change",
                         {
-                            detail:
-                                elementType,
+                            detail: elementType,
                         },
                     ),
                 );
@@ -463,9 +410,10 @@ export default function WarehouseCanvas({
                 return;
             }
 
-            /*
-             * Zoom.
-             */
+            /* -----------------------------------------------------------------
+             * ZOOM
+             * ----------------------------------------------------------------- */
+
             if (
                 event.key === "+" ||
                 event.key === "="
@@ -516,8 +464,9 @@ export default function WarehouseCanvas({
         commit,
         elements,
         redo,
-        selectedId,
+        selectedElementId,
         undo,
+        onElementSelect,
     ]);
 
     /* =========================================================================
@@ -596,8 +545,62 @@ export default function WarehouseCanvas({
 
     function stopPan() {
         isPanning.current = false;
-
         setIsDraggingCanvas(false);
+    }
+
+    /* =========================================================================
+     * OBJECT MOVE START
+     * ========================================================================= */
+
+    function startElementMove(
+        event: React.MouseEvent,
+        element: WarehouseElement,
+    ) {
+        if (
+            activeTool !== "select" ||
+            isSpacePressed
+        ) {
+            return;
+        }
+
+        event.stopPropagation();
+
+        onElementSelect(element.id);
+
+        setInteraction({
+            type: "move",
+            id: element.id,
+            startMouseX: event.clientX,
+            startMouseY: event.clientY,
+            startX: element.x,
+            startY: element.y,
+        });
+    }
+
+    /* =========================================================================
+     * RESIZE
+     * ========================================================================= */
+
+    function startResize(
+        event: React.MouseEvent,
+        element: WarehouseElement,
+        handle: ResizeHandle,
+    ) {
+        event.stopPropagation();
+
+        onElementSelect(element.id);
+
+        setInteraction({
+            type: "resize",
+            id: element.id,
+            handle,
+            startMouseX: event.clientX,
+            startMouseY: event.clientY,
+            startX: element.x,
+            startY: element.y,
+            startWidth: element.width,
+            startHeight: element.height,
+        });
     }
 
     /* =========================================================================
@@ -607,21 +610,25 @@ export default function WarehouseCanvas({
     function handleMouseDown(
         event: React.MouseEvent,
     ) {
+        /* ---------------------------------------------------------------------
+         * PAN MODE
+         * --------------------------------------------------------------------- */
+
         if (
             isSpacePressed ||
             activeTool === "hand"
         ) {
             startPan(event);
-
             return;
         }
+
+        /* ---------------------------------------------------------------------
+         * SELECT MODE
+         * --------------------------------------------------------------------- */
 
         const position =
             getCanvasPosition(event);
 
-        /*
-         * SELECT MODE
-         */
         if (activeTool === "select") {
             const clickedElement =
                 [...elements]
@@ -641,38 +648,18 @@ export default function WarehouseCanvas({
                     );
 
             if (!clickedElement) {
-                setSelectedId(null);
-
-                return;
+                onElementSelect(null);
             }
-
-            setSelectedId(
-                clickedElement.id,
-            );
-
-            setInteraction({
-                type: "move",
-                id: clickedElement.id,
-                startMouseX:
-                    event.clientX,
-                startMouseY:
-                    event.clientY,
-                startX:
-                    clickedElement.x,
-                startY:
-                    clickedElement.y,
-            });
 
             return;
         }
 
-        /*
+        /* ---------------------------------------------------------------------
          * PLACE NEW OBJECT
-         */
+         * --------------------------------------------------------------------- */
+
         const definition =
-            WAREHOUSE_TOOL_MAP[
-            activeTool
-            ];
+            WAREHOUSE_TOOL_MAP[activeTool];
 
         if (!definition) {
             return;
@@ -685,10 +672,6 @@ export default function WarehouseCanvas({
                 position.y,
             );
 
-        /*
-         * Automatically assign a readable
-         * default name.
-         */
         const defaultName =
             getNextElementName(
                 activeTool,
@@ -714,54 +697,26 @@ export default function WarehouseCanvas({
 
         commit([
             ...elements,
-            newElement,
+            elementWithName,
         ]);
 
-        setSelectedId(newElement.id);
+        onElementSelect(
+            elementWithName.id,
+        );
 
-        /*
-         * After placing one object, automatically switch
-         * back to the Select tool so the user can move/edit
-         * the newly created object instead of continuously
-         * placing more objects.
-         */
+        /* ---------------------------------------------------------------------
+         * AFTER PLACING ONE OBJECT,
+         * RETURN TO SELECT TOOL
+         * --------------------------------------------------------------------- */
+
         window.dispatchEvent(
-            new CustomEvent("warehouse-tool-change", {
-                detail: "select",
-            }),
+            new CustomEvent(
+                "warehouse-tool-change",
+                {
+                    detail: "select",
+                },
+            ),
         );
-    }
-
-    /* =========================================================================
-     * RESIZE
-     * ========================================================================= */
-
-    function startResize(
-        event: React.MouseEvent,
-        element: WarehouseElement,
-        handle: ResizeHandle,
-    ) {
-        event.stopPropagation();
-
-        setSelectedId(
-            element.id,
-        );
-
-        setInteraction({
-            type: "resize",
-            id: element.id,
-            handle,
-            startMouseX:
-                event.clientX,
-            startMouseY:
-                event.clientY,
-            startX: element.x,
-            startY: element.y,
-            startWidth:
-                element.width,
-            startHeight:
-                element.height,
-        });
     }
 
     /* =========================================================================
@@ -771,11 +726,18 @@ export default function WarehouseCanvas({
     function handleMouseMove(
         event: React.MouseEvent,
     ) {
+        /* ---------------------------------------------------------------------
+         * CANVAS PAN
+         * --------------------------------------------------------------------- */
+
         if (isPanning.current) {
             movePan(event);
-
             return;
         }
+
+        /* ---------------------------------------------------------------------
+         * NO OBJECT INTERACTION
+         * --------------------------------------------------------------------- */
 
         if (!interaction) {
             return;
@@ -791,136 +753,140 @@ export default function WarehouseCanvas({
                 interaction.startMouseY) /
             zoom;
 
-        setElements(
+        /* ---------------------------------------------------------------------
+         * MOVE / RESIZE OBJECT
+         * --------------------------------------------------------------------- */
+
+        onElementsChange(
             (current) =>
-                current.map(
-                    (element) => {
-                        if (
-                            element.id !==
-                            interaction.id
-                        ) {
-                            return element;
-                        }
+                current.map((element) => {
+                    if (
+                        element.id !==
+                        interaction.id
+                    ) {
+                        return element;
+                    }
 
-                        /*
-                         * MOVE
-                         */
-                        if (
-                            interaction.type ===
-                            "move"
-                        ) {
-                            return {
-                                ...element,
+                    /* ---------------------------------------------------------
+                     * MOVE
+                     * --------------------------------------------------------- */
 
-                                x:
-                                    interaction.startX +
-                                    deltaX,
-
-                                y:
-                                    interaction.startY +
-                                    deltaY,
-                            };
-                        }
-
-                        /*
-                         * RESIZE
-                         */
-                        const definition =
-                            WAREHOUSE_TOOL_MAP[
-                            element.type
-                            ];
-
-                        let x =
-                            interaction.startX;
-
-                        let y =
-                            interaction.startY;
-
-                        let width =
-                            interaction.startWidth;
-
-                        let height =
-                            interaction.startHeight;
-
-                        const minWidth =
-                            definition?.minWidth ??
-                            20;
-
-                        const minHeight =
-                            definition?.minHeight ??
-                            20;
-
-                        if (
-                            interaction.handle.includes(
-                                "e",
-                            )
-                        ) {
-                            width =
-                                Math.max(
-                                    minWidth,
-                                    interaction.startWidth +
-                                    deltaX,
-                                );
-                        }
-
-                        if (
-                            interaction.handle.includes(
-                                "s",
-                            )
-                        ) {
-                            height =
-                                Math.max(
-                                    minHeight,
-                                    interaction.startHeight +
-                                    deltaY,
-                                );
-                        }
-
-                        if (
-                            interaction.handle.includes(
-                                "w",
-                            )
-                        ) {
-                            width =
-                                Math.max(
-                                    minWidth,
-                                    interaction.startWidth -
-                                    deltaX,
-                                );
-
-                            x =
-                                interaction.startX +
-                                interaction.startWidth -
-                                width;
-                        }
-
-                        if (
-                            interaction.handle.includes(
-                                "n",
-                            )
-                        ) {
-                            height =
-                                Math.max(
-                                    minHeight,
-                                    interaction.startHeight -
-                                    deltaY,
-                                );
-
-                            y =
-                                interaction.startY +
-                                interaction.startHeight -
-                                height;
-                        }
-
+                    if (
+                        interaction.type ===
+                        "move"
+                    ) {
                         return {
                             ...element,
-                            x,
-                            y,
-                            width,
-                            height,
+
+                            x:
+                                interaction.startX +
+                                deltaX,
+
+                            y:
+                                interaction.startY +
+                                deltaY,
                         };
-                    },
-                ),
+                    }
+
+                    /* ---------------------------------------------------------
+                     * RESIZE
+                     * --------------------------------------------------------- */
+
+                    const definition =
+                        WAREHOUSE_TOOL_MAP[
+                        element.type
+                        ];
+
+                    let x =
+                        interaction.startX;
+
+                    let y =
+                        interaction.startY;
+
+                    let width =
+                        interaction.startWidth;
+
+                    let height =
+                        interaction.startHeight;
+
+                    const minWidth =
+                        definition?.minWidth ??
+                        20;
+
+                    const minHeight =
+                        definition?.minHeight ??
+                        20;
+
+                    if (
+                        interaction.handle.includes(
+                            "e",
+                        )
+                    ) {
+                        width =
+                            Math.max(
+                                minWidth,
+                                interaction.startWidth +
+                                deltaX,
+                            );
+                    }
+
+                    if (
+                        interaction.handle.includes(
+                            "s",
+                        )
+                    ) {
+                        height =
+                            Math.max(
+                                minHeight,
+                                interaction.startHeight +
+                                deltaY,
+                            );
+                    }
+
+                    if (
+                        interaction.handle.includes(
+                            "w",
+                        )
+                    ) {
+                        width =
+                            Math.max(
+                                minWidth,
+                                interaction.startWidth -
+                                deltaX,
+                            );
+
+                        x =
+                            interaction.startX +
+                            interaction.startWidth -
+                            width;
+                    }
+
+                    if (
+                        interaction.handle.includes(
+                            "n",
+                        )
+                    ) {
+                        height =
+                            Math.max(
+                                minHeight,
+                                interaction.startHeight -
+                                deltaY,
+                            );
+
+                        y =
+                            interaction.startY +
+                            interaction.startHeight -
+                            height;
+                    }
+
+                    return {
+                        ...element,
+                        x,
+                        y,
+                        width,
+                        height,
+                    };
+                }),
         );
     }
 
@@ -929,26 +895,31 @@ export default function WarehouseCanvas({
      * ========================================================================= */
 
     function handleMouseUp() {
+        /* ---------------------------------------------------------------------
+         * FINISH PAN
+         * --------------------------------------------------------------------- */
+
         if (isPanning.current) {
             stopPan();
-
             return;
         }
+
+        /* ---------------------------------------------------------------------
+         * FINISH OBJECT INTERACTION
+         * --------------------------------------------------------------------- */
 
         if (!interaction) {
             return;
         }
 
         /*
-         * Save the state from before the
+         * Save the state from BEFORE the move/resize
          * interaction into history.
          */
-        setHistory(
-            (current) => [
-                ...current,
-                elements,
-            ],
-        );
+        setHistory((current) => [
+            ...current,
+            elements,
+        ]);
 
         setFuture([]);
 
@@ -959,81 +930,38 @@ export default function WarehouseCanvas({
      * PROPERTY UPDATE
      * ========================================================================= */
 
-    function updateElement(
-        id: string,
-        patch: Partial<WarehouseElement>,
-    ) {
-        setElements(
-            (current) =>
-                current.map(
-                    (element) => {
-                        if (
-                            element.id !==
-                            id
-                        ) {
-                            return element;
-                        }
-
-                        return {
-                            ...element,
-                            ...patch,
-                        };
-                    },
-                ),
-        );
-    }
-
     function updateProperty(
         id: string,
         key: string,
         value: unknown,
     ) {
-        setElements(
+        onElementsChange(
             (current) =>
-                current.map(
-                    (element) => {
-                        if (
-                            element.id !==
-                            id
-                        ) {
-                            return element;
-                        }
+                current.map((element) => {
+                    if (
+                        element.id !== id
+                    ) {
+                        return element;
+                    }
 
-                        return {
-                            ...element,
+                    return {
+                        ...element,
 
-                            properties: {
-                                ...(element.properties ??
-                                    {}),
-                                [key]: value,
-                            },
-                        };
-                    },
-                ),
+                        properties: {
+                            ...(element.properties ??
+                                {}),
+                            [key]: value,
+                        },
+                    };
+                }),
         );
-    }
-
-    function deleteSelected() {
-        if (!selectedId) {
-            return;
-        }
-
-        commit(
-            elements.filter(
-                (element) =>
-                    element.id !==
-                    selectedId,
-            ),
-        );
-
-        setSelectedId(null);
     }
 
     const selectedElement =
         elements.find(
             (element) =>
                 element.id ===
-                selectedId,
+                selectedElementId,
         );
 
     /* =========================================================================
@@ -1044,28 +972,18 @@ export default function WarehouseCanvas({
         <div
             ref={canvasRef}
             className={`relative h-full w-full overflow-hidden bg-[#f8fafc] ${isDraggingCanvas
-                ? "cursor-grabbing"
-                : isSpacePressed ||
-                    activeTool ===
-                    "hand"
-                    ? "cursor-grab"
-                    : activeTool ===
-                        "select"
-                        ? "cursor-default"
-                        : "cursor-crosshair"
+                    ? "cursor-grabbing"
+                    : isSpacePressed ||
+                        activeTool === "hand"
+                        ? "cursor-grab"
+                        : activeTool === "select"
+                            ? "cursor-default"
+                            : "cursor-crosshair"
                 }`}
-            onMouseDown={
-                handleMouseDown
-            }
-            onMouseMove={
-                handleMouseMove
-            }
-            onMouseUp={
-                handleMouseUp
-            }
-            onMouseLeave={
-                handleMouseUp
-            }
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
         >
             {/* =================================================================
              * GRID
@@ -1087,8 +1005,7 @@ export default function WarehouseCanvas({
                         )
                     `,
 
-                    backgroundSize: `${24 * zoom
-                        }px ${24 * zoom
+                    backgroundSize: `${24 * zoom}px ${24 * zoom
                         }px`,
 
                     backgroundPosition: `${offsetX}px ${offsetY}px`,
@@ -1117,20 +1034,19 @@ export default function WarehouseCanvas({
                 {elements.map(
                     (element) => (
                         <WarehouseObject
-                            key={
-                                element.id
-                            }
-                            element={
-                                element
-                            }
+                            key={element.id}
+                            element={element}
                             selected={
-                                selectedId ===
+                                selectedElementId ===
                                 element.id
                             }
                             onSelect={() =>
-                                setSelectedId(
+                                onElementSelect(
                                     element.id,
                                 )
+                            }
+                            onMoveStart={
+                                startElementMove
                             }
                             onResize={
                                 startResize
@@ -1141,68 +1057,27 @@ export default function WarehouseCanvas({
             </div>
 
             {/* =================================================================
-             * PROPERTY PANEL
-             * ================================================================= */}
-
-            {selectedElement && (
-                <div
-                    className="absolute right-4 top-20 z-30"
-                    onMouseDown={(event) => {
-                        event.stopPropagation();
-                    }}
-                    onClick={(event) => {
-                        event.stopPropagation();
-                    }}
-                >
-                    <ElementProperties
-                        element={
-                            selectedElement
-                        }
-                        onChange={
-                            updateElement
-                        }
-                        onPropertyChange={
-                            updateProperty
-                        }
-                        onDelete={
-                            deleteSelected
-                        }
-                    />
-                </div>
-            )}
-
-            {/* =================================================================
              * EMPTY STATE
              * ================================================================= */}
 
-            {elements.length ===
-                0 && (
-                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                        <div className="rounded-xl border bg-background/90 px-6 py-4 text-center shadow-sm">
-                            <p className="text-sm font-medium">
-                                Start
-                                designing
-                                your
-                                warehouse
-                            </p>
+            {elements.length === 0 && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <div className="rounded-xl border bg-background/90 px-6 py-4 text-center shadow-sm">
+                        <p className="text-sm font-medium">
+                            Start designing
+                            your warehouse
+                        </p>
 
-                            <p className="mt-1 text-xs text-muted-foreground">
-                                Choose
-                                an
-                                object
-                                from
-                                the
-                                toolbar
-                                and
-                                click
-                                anywhere
-                                on
-                                the
-                                canvas.
-                            </p>
-                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            Choose an object
+                            from the toolbar
+                            and click
+                            anywhere on
+                            the canvas.
+                        </p>
                     </div>
-                )}
+                </div>
+            )}
         </div>
     );
 }
@@ -1215,14 +1090,16 @@ function WarehouseObject({
     element,
     selected,
     onSelect,
+    onMoveStart,
     onResize,
 }: {
     element: WarehouseElement;
-
     selected: boolean;
-
     onSelect: () => void;
-
+    onMoveStart: (
+        event: React.MouseEvent,
+        element: WarehouseElement,
+    ) => void;
     onResize: (
         event: React.MouseEvent,
         element: WarehouseElement,
@@ -1257,22 +1134,25 @@ function WarehouseObject({
             onMouseDown={(event) => {
                 event.stopPropagation();
 
-                onSelect();
+                onMoveStart(
+                    event,
+                    element,
+                );
             }}
         >
             <div
                 className={`relative h-full w-full overflow-hidden rounded-md border-2 bg-white shadow-sm transition-shadow ${selected
-                    ? "border-blue-600 shadow-lg ring-2 ring-blue-500/20"
-                    : "border-slate-400"
+                        ? "border-blue-600 shadow-lg ring-2 ring-blue-500/20"
+                        : "border-slate-400"
                     }`}
             >
                 <ObjectVisual
                     type={element.type}
                 />
 
-                {/* =========================================================
+                {/* =============================================================
                  * LABEL
-                 * ========================================================= */}
+                 * ============================================================= */}
 
                 <div className="absolute inset-x-0 bottom-0 bg-white/90 px-2 py-1 backdrop-blur-sm">
                     <div className="truncate text-[10px] font-semibold text-slate-700">
@@ -1293,9 +1173,9 @@ function WarehouseObject({
                     )}
                 </div>
 
-                {/* =========================================================
+                {/* =============================================================
                  * RESIZE HANDLES
-                 * ========================================================= */}
+                 * ============================================================= */}
 
                 {selected && (
                     <>
@@ -1345,13 +1225,11 @@ function ResizeHandle({
     element,
 }: {
     position: ResizeHandle;
-
     onMouseDown: (
         event: React.MouseEvent,
         element: WarehouseElement,
         handle: ResizeHandle,
     ) => void;
-
     element: WarehouseElement;
 }) {
     const positionClasses: Record<
@@ -1379,346 +1257,6 @@ function ResizeHandle({
                 )
             }
         />
-    );
-}
-
-/* =============================================================================
- * PROPERTY PANEL
- * ============================================================================= */
-
-function ElementProperties({
-    element,
-    onChange,
-    onPropertyChange,
-    onDelete,
-}: {
-    element: WarehouseElement;
-
-    onChange: (
-        id: string,
-        patch: Partial<WarehouseElement>,
-    ) => void;
-
-    onPropertyChange: (
-        id: string,
-        key: string,
-        value: unknown,
-    ) => void;
-
-    onDelete: () => void;
-}) {
-    const name =
-        getElementName(element);
-
-    const assignment =
-        getAssignment(element);
-
-    const sku =
-        getSku(element);
-
-    return (
-        <div className="w-72 rounded-xl border bg-background/95 p-4 shadow-xl backdrop-blur-mdj">
-            {/* =============================================================
-             * HEADER
-             * ============================================================= */}
-
-            <div className="mb-4 flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">
-                        {name}
-                    </p>
-
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                        {element.type}
-                    </p>
-                </div>
-
-                <button
-                    type="button"
-                    onClick={
-                        onDelete
-                    }
-                    className="shrink-0 text-xs text-destructive hover:underline"
-                >
-                    Delete
-                </button>
-            </div>
-
-            {/* =============================================================
-             * NAME
-             * ============================================================= */}
-
-            <PropertyInput
-                label="Element Name"
-                value={name}
-                placeholder="e.g. Rack A-01"
-                onChange={(value) => {
-                    onChange(
-                        element.id,
-                        {
-                            elementName:
-                                value,
-
-                            label:
-                                value,
-                        },
-                    );
-
-                    onPropertyChange(
-                        element.id,
-                        "elementName",
-                        value,
-                    );
-                }}
-            />
-
-            {/* =============================================================
-             * ASSIGNMENT
-             * ============================================================= */}
-
-            <PropertyInput
-                label="Assigned Item / Work"
-                placeholder="e.g. Screws / Packaging of Drivers"
-                value={
-                    assignment
-                }
-                onChange={(value) =>
-                    onPropertyChange(
-                        element.id,
-                        "assignment",
-                        value,
-                    )
-                }
-            />
-
-            {/* =============================================================
-             * SKU
-             * ============================================================= */}
-
-            <PropertyInput
-                label="SKU"
-                placeholder="e.g. SCR-001"
-                value={sku}
-                onChange={(value) =>
-                    onPropertyChange(
-                        element.id,
-                        "sku",
-                        value,
-                    )
-                }
-            />
-
-            {/* =============================================================
-             * LOCATION
-             * ============================================================= */}
-
-            <PropertyInput
-                label="Location Code"
-                placeholder="e.g. A-01"
-                value={
-                    element.locationCode ??
-                    ""
-                }
-                onChange={(value) =>
-                    onChange(
-                        element.id,
-                        {
-                            locationCode:
-                                value,
-                        },
-                    )
-                }
-            />
-
-            {/* =============================================================
-             * POSITION
-             * ============================================================= */}
-
-            <div className="grid grid-cols-2 gap-2">
-                <NumberInput
-                    label="X"
-                    value={
-                        element.x
-                    }
-                    onChange={(value) =>
-                        onChange(
-                            element.id,
-                            {
-                                x: value,
-                            },
-                        )
-                    }
-                />
-
-                <NumberInput
-                    label="Y"
-                    value={
-                        element.y
-                    }
-                    onChange={(value) =>
-                        onChange(
-                            element.id,
-                            {
-                                y: value,
-                            },
-                        )
-                    }
-                />
-            </div>
-
-            {/* =============================================================
-             * DIMENSIONS
-             * ============================================================= */}
-
-            <div className="mt-3 grid grid-cols-2 gap-2">
-                <NumberInput
-                    label="Width"
-                    value={
-                        element.width
-                    }
-                    onChange={(value) =>
-                        onChange(
-                            element.id,
-                            {
-                                width: Math.max(
-                                    1,
-                                    value,
-                                ),
-                            },
-                        )
-                    }
-                />
-
-                <NumberInput
-                    label="Height"
-                    value={
-                        element.height
-                    }
-                    onChange={(value) =>
-                        onChange(
-                            element.id,
-                            {
-                                height: Math.max(
-                                    1,
-                                    value,
-                                ),
-                            },
-                        )
-                    }
-                />
-            </div>
-
-            {/* =============================================================
-             * ROTATION
-             * ============================================================= */}
-
-            <div className="mt-3">
-                <NumberInput
-                    label="Rotation"
-                    value={
-                        element.rotation
-                    }
-                    onChange={(value) =>
-                        onChange(
-                            element.id,
-                            {
-                                rotation:
-                                    value,
-                            },
-                        )
-                    }
-                />
-            </div>
-        </div>
-    );
-}
-
-/* =============================================================================
- * TEXT INPUT
- * ============================================================================= */
-
-function PropertyInput({
-    label,
-    value,
-    placeholder,
-    onChange,
-}: {
-    label: string;
-
-    value: string;
-
-    placeholder?: string;
-
-    onChange: (
-        value: string,
-    ) => void;
-}) {
-    return (
-        <label className="mb-3 block">
-            <span className="mb-1 block text-[11px] font-medium text-muted-foreground">
-                {label}
-            </span>
-
-            <input
-                value={value}
-                placeholder={
-                    placeholder
-                }
-                onChange={(event) =>
-                    onChange(
-                        event.target.value,
-                    )
-                }
-                className="h-8 w-full rounded-md border bg-background px-2 text-xs outline-none transition focus:ring-2 focus:ring-ring"
-            />
-        </label>
-    );
-}
-
-/* =============================================================================
- * NUMBER INPUT
- * ============================================================================= */
-
-function NumberInput({
-    label,
-    value,
-    onChange,
-}: {
-    label: string;
-
-    value: number;
-
-    onChange: (
-        value: number,
-    ) => void;
-}) {
-    return (
-        <label>
-            <span className="mb-1 block text-[11px] font-medium text-muted-foreground">
-                {label}
-            </span>
-
-            <input
-                type="number"
-                value={
-                    Number.isFinite(
-                        value,
-                    )
-                        ? Math.round(
-                            value,
-                        )
-                        : 0
-                }
-                onChange={(event) =>
-                    onChange(
-                        Number(
-                            event.target.value,
-                        ),
-                    )
-                }
-                className="h-8 w-full rounded-md border bg-background px-2 text-xs outline-none transition focus:ring-2 focus:ring-ring"
-            />
-        </label>
     );
 }
 
@@ -1781,17 +1319,10 @@ function ObjectVisual({
         case "pallet-area":
             return (
                 <div className="absolute inset-3 grid grid-cols-2 gap-2">
-                    {[
-                        1,
-                        2,
-                        3,
-                        4,
-                    ].map(
+                    {[1, 2, 3, 4].map(
                         (item) => (
                             <div
-                                key={
-                                    item
-                                }
+                                key={item}
                                 className="rounded border border-amber-500 bg-amber-100"
                             />
                         ),
