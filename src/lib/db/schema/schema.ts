@@ -1,56 +1,18 @@
-import { relations } from "drizzle-orm";
-import {
-    pgTable,
-    pgEnum,
-    uuid,
-    varchar,
-    timestamp,
-    uniqueIndex,
-    primaryKey,
-    text,
-    boolean,
-    index,
-    jsonb
-} from "drizzle-orm/pg-core";
-import { employeeDepartments, employeeRoles, employees } from "./profile-schema";
-import { users } from "./auth-schema";
-import { companies, departments } from "./company-schema";
-import { roles } from "./rbac-schema";
+import { timestamp } from "drizzle-orm/pg-core";
 
-/**
- * =============================================================================
- * ENUMS
- * =============================================================================
- */
+export * from "./company-schema";
+export * from "./auth-schema";
+export * from "./rbac-schema";
+export * from "./profile-schema";
+export * from "./audit-schema";
+export * from "./inventory-schema";
+export * from "./purchases-schema";
+export * from "./sales-schema";
+export * from "./relations";
 
-export const subscriptionPlanEnum = pgEnum("subscription_plan", [
-    "free",
-    "starter",
-    "pro",
-    "enterprise",
-]);
-
-export const subscriptionStatusEnum = pgEnum("subscription_status", [
-    "trialing",
-    "active",
-    "past_due",
-    "canceled",
-    "suspended",
-]);
-
-export const companySizeEnum = pgEnum("company_size", [
-    "1-10",
-    "11-50",
-    "51-200",
-    "201-500",
-    "500+",
-]);
-
-/**
- * =============================================================================
- * COMMON
- * =============================================================================
- */
+/* =============================================================================
+ * SHARED HELPERS
+ * ============================================================================= */
 
 export const timestamps = {
     createdAt: timestamp("created_at", {
@@ -65,6 +27,3 @@ export const timestamps = {
         .notNull()
         .defaultNow(),
 };
-
-
-

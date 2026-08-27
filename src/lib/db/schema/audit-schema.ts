@@ -1,26 +1,12 @@
-import { relations } from "drizzle-orm";
 import {
     pgTable,
-    pgEnum,
     uuid,
     varchar,
-    timestamp,
-    uniqueIndex,
-    primaryKey,
-    text,
-    boolean,
-    index,
-    jsonb
+    jsonb,
 } from "drizzle-orm/pg-core";
 import { timestamps } from "./schema";
 import { companies } from "./company-schema";
 import { users } from "./auth-schema";
-
-
-
-
-
-
 
 export const auditLogs = pgTable("audit_logs", {
     id: uuid("id").primaryKey().defaultRandom(),

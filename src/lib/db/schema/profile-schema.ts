@@ -1,24 +1,16 @@
-import { relations } from "drizzle-orm";
 import {
     pgTable,
-    pgEnum,
     uuid,
     varchar,
     timestamp,
     uniqueIndex,
     primaryKey,
-    text,
-    boolean,
     index,
-    jsonb
 } from "drizzle-orm/pg-core";
 import { timestamps } from "./schema";
 import { companies, departments } from "./company-schema";
 import { users } from "./auth-schema";
 import { roles } from "./rbac-schema";
-
-
-
 
 export const employees = pgTable(
     "employees",
@@ -73,7 +65,6 @@ export const employees = pgTable(
     }),
 );
 
-
 export const employeeRoles = pgTable(
     "employee_roles",
     {
@@ -97,8 +88,6 @@ export const employeeRoles = pgTable(
         roleIdx: index("employee_roles_role_idx").on(table.roleId),
     }),
 );
-
-
 
 export const employeeDepartments = pgTable(
     "employee_departments",

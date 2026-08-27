@@ -14,7 +14,7 @@ import {
 
 import { companies } from "./company-schema";
 import { employees } from "./profile-schema";
-import { products } from "./inventory-schema";
+import { products, warehouses } from "./inventory-schema";
 import { timestamps } from "./schema";
 
 /* =============================================================================
@@ -258,6 +258,12 @@ export const purchaseOrders = pgTable(
         })
             .notNull()
             .default("0"),
+
+        warehouseId: uuid("warehouse_id")
+            .notNull()
+            .references(() => warehouses.id, {
+                onDelete: "restrict",
+            }),
 
         notes: text("notes"),
 

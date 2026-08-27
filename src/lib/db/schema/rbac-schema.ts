@@ -1,7 +1,5 @@
-import { relations } from "drizzle-orm";
 import {
     pgTable,
-    pgEnum,
     uuid,
     varchar,
     timestamp,
@@ -10,13 +8,9 @@ import {
     text,
     boolean,
     index,
-    jsonb
 } from "drizzle-orm/pg-core";
 import { timestamps } from "./schema";
 import { companies } from "./company-schema";
-
-
-
 
 export const roles = pgTable(
     "roles",
@@ -97,5 +91,3 @@ export const rolePermissions = pgTable(
         ),
     }),
 );
-
-

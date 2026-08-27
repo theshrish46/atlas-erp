@@ -1,16 +1,5 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import {
-    users,
-    companies,
-    employees,
-    roles,
-    permissions,
-    rolePermissions,
-    employeeRoles,
-    sessions,
-    auditLogs,
-} from "@/lib/db/schema/schema";
 import { eq, and } from "drizzle-orm";
 import { hashPassword } from "@/lib/auth/hash";
 import { signAccessToken } from "@/lib/auth/jwt";
@@ -20,6 +9,13 @@ import {
     errorResponse,
 } from "@/lib/utils/api-response";
 import { generateCompanySlug } from "@/lib/utils/slug";
+
+import { sessions, users } from "@/lib/db/schema/auth-schema"
+import { permissions, rolePermissions, roles } from "@/lib/db/schema/rbac-schema"
+import { companies } from "@/lib/db/schema/company-schema";
+import { employee } from "@/lib/db/schema/company";
+import { employeeRoles, employees } from "@/lib/db/schema/profile-schema";
+import { auditLogs } from "@/lib/db/schema/audit-schema";
 
 export async function POST(req: NextRequest) {
     try {

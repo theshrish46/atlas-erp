@@ -1,22 +1,16 @@
-import { relations } from "drizzle-orm";
 import {
     pgTable,
-    pgEnum,
     uuid,
     varchar,
     timestamp,
     uniqueIndex,
-    primaryKey,
     text,
     boolean,
     index,
-    jsonb
 } from "drizzle-orm/pg-core";
 import { timestamps } from "./schema";
 import { companies } from "./company-schema";
 import { roles } from "./rbac-schema";
-
-
 
 export const users = pgTable(
     "users",
@@ -44,8 +38,6 @@ export const users = pgTable(
     }),
 );
 
-
-
 export const sessions = pgTable(
     "sessions",
     {
@@ -57,8 +49,7 @@ export const sessions = pgTable(
                 onDelete: "cascade",
             }),
 
-        tokenHash: text("token_hash", {
-        }).notNull(),
+        tokenHash: text("token_hash").notNull(),
 
         expiresAt: timestamp("expires_at", {
             withTimezone: true,
@@ -102,8 +93,7 @@ export const invitations = pgTable(
             length: 255,
         }).notNull(),
 
-        tokenHash: text("token_hash", {
-        }).notNull(),
+        tokenHash: text("token_hash").notNull(),
 
         expiresAt: timestamp("expires_at", {
             withTimezone: true,
@@ -126,54 +116,45 @@ export const invitations = pgTable(
     }),
 );
 
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+    id: uuid("id").primaryKey().defaultRandom(),
 
-export const passwordResetTokens = pgTable(
-    "password_reset_tokens",
-    {
-        id: uuid("id").primaryKey().defaultRandom(),
-
-        userId: uuid("user_id")
-            .notNull()
-            .references(() => users.id, {
-                onDelete: "cascade",
-            }),
-
-        tokenHash: text("token_hash", {
-        }).notNull(),
-
-        expiresAt: timestamp("expires_at", {
-            withTimezone: true,
-        }).notNull(),
-
-        usedAt: timestamp("used_at", {
-            withTimezone: true,
+    userId: uuid("user_id")
+        .notNull()
+        .references(() => users.id, {
+            onDelete: "cascade",
         }),
-    },
-);
 
-export const emailVerificationTokens = pgTable(
-    "email_verification_tokens",
-    {
-        id: uuid("id").primaryKey().defaultRandom(),
+    tokenHash: text("token_hash").notNull(),
 
-        userId: uuid("user_id")
-            .notNull()
-            .references(() => users.id, {
-                onDelete: "cascade",
-            }),
+    expiresAt: timestamp("expires_at", {
+        withTimezone: true,
+    }).notNull(),
 
-        tokenHash: text("token_hash", {
-        }).notNull(),
+    usedAt: timestamp("used_at", {
+        withTimezone: true,
+    }),
+});
 
-        expiresAt: timestamp("expires_at", {
-            withTimezone: true,
-        }).notNull(),
+export const emailVerificationTokens = pgTable("email_verification_tokens", {
+    id: uuid("id").primaryKey().defaultRandom(),
 
-        verifiedAt: timestamp("verified_at", {
-            withTimezone: true,
+    userId: uuid("user_id")
+        .notNull()
+        .references(() => users.id, {
+            onDelete: "cascade",
         }),
-    },
-);
+
+    tokenHash: text("token_hash").notNull(),
+
+    expiresAt: timestamp("expires_at", {
+        withTimezone: true,
+    }).notNull(),
+
+    verifiedAt: timestamp("verified_at", {
+        withTimezone: true,
+    }),
+});
 
 export const mfaFactors = pgTable("mfa_factors", {
     id: uuid("id").primaryKey().defaultRandom(),

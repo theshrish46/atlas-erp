@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
     ArrowLeft,
@@ -43,12 +43,26 @@ import {
 
 type Vendor = {
     id: string;
+    companyId: string;
     name: string;
-    email: string;
-    phone: string;
-    city: string;
+    vendorCode: string;
+    email: string | null;
+    phone: string | null;
+    website: string | null;
+    gstNumber: string | null;
+    panNumber: string | null;
+    billingAddress: string | null;
+    shippingAddress: string | null;
+    city: string | null;
+    state: string | null;
     country: string;
+    postalCode: string | null;
+    paymentTerms: string | null;
+    notes: string | null;
+    status: "active" | "inactive";
     isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -64,7 +78,8 @@ export default function VendorsPage() {
      * This will be replaced with the vendors API once the vendor
      * schema and business requirements are finalized.
      */
-    const [vendors] = useState<Vendor[]>([]);
+    const [vendors, setVendors] = useState<Vendor[]>([]);
+    const [loading, setLoading] = useState(true);
 
     /* ---------------------------------------------------------------------- */
     /* Statistics                                                             */
@@ -115,6 +130,41 @@ export default function VendorsPage() {
             );
         });
     }, [vendors, search]);
+
+
+
+
+    useEffect(() => {
+        async function loadVendors() {
+            try {
+                setLoading(true);
+
+                const response = await fetch(
+                    "/api/purchases/vendors",
+                );
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        result.message ||
+                        "Failed to fetch vendors",
+                    );
+                }
+
+                setVendors(result.data ?? []);
+            } catch (error) {
+                console.error(
+                    "Failed to load vendors:",
+                    error,
+                );
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadVendors();
+    }, []);
 
     /* ---------------------------------------------------------------------- */
     /* Render                                                                 */
