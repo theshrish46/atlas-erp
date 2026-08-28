@@ -7,7 +7,6 @@ import {
     boolean,
     timestamp,
     numeric,
-    integer,
     index,
     uniqueIndex,
 } from "drizzle-orm/pg-core";
@@ -15,7 +14,7 @@ import {
 import { companies } from "./company-schema";
 import { employees } from "./profile-schema";
 import { products } from "./inventory-schema";
-import { timestamps } from "./schema";
+import { timestamps } from "./common";
 
 /* =============================================================================
  * ENUMS
@@ -68,7 +67,6 @@ export const salesPaymentMethodEnum = pgEnum("sales_payment_method", [
     "cheque",
     "other",
 ]);
-
 
 /* =============================================================================
  * CUSTOMERS

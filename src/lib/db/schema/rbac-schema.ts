@@ -9,7 +9,7 @@ import {
     boolean,
     index,
 } from "drizzle-orm/pg-core";
-import { timestamps } from "./schema";
+import { timestamps } from "./common";
 import { companies } from "./company-schema";
 
 export const roles = pgTable(

@@ -7,7 +7,7 @@ import {
     primaryKey,
     index,
 } from "drizzle-orm/pg-core";
-import { timestamps } from "./schema";
+import { timestamps } from "./common";
 import { companies, departments } from "./company-schema";
 import { users } from "./auth-schema";
 import { roles } from "./rbac-schema";

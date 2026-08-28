@@ -15,7 +15,7 @@ import {
 
 import { users } from "./auth-schema";
 import { companies } from "./company-schema";
-import { timestamps } from "./schema";
+import { timestamps } from "./common";
 
 /* =============================================================================
  * ENUMS

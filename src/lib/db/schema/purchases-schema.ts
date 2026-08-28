@@ -1,7 +1,6 @@
 import {
     boolean,
     index,
-    integer,
     numeric,
     pgEnum,
     pgTable,
@@ -15,7 +14,7 @@ import {
 import { companies } from "./company-schema";
 import { employees } from "./profile-schema";
 import { products, warehouses } from "./inventory-schema";
-import { timestamps } from "./schema";
+import { timestamps } from "./common";
 
 /* =============================================================================
  * ENUMS

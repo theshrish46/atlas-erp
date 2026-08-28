@@ -4,8 +4,12 @@ import {
     uuid,
     varchar,
     uniqueIndex,
+    text,
+    boolean,
+    timestamp,
+    index
 } from "drizzle-orm/pg-core";
-import { timestamps } from "./schema";
+import { timestamps } from "./common";
 
 /* =============================================================================
  * ENUMS
@@ -34,42 +38,59 @@ export const companySizeEnum = pgEnum("company_size", [
     "500+",
 ]);
 
-/* =============================================================================
- * COMPANIES
- * ============================================================================= */
+
+
 
 export const companies = pgTable(
     "companies",
     {
         id: uuid("id").primaryKey().defaultRandom(),
 
-        name: varchar("name", {
-            length: 255,
-        }).notNull(),
+        name: varchar("name", { length: 255 }).notNull(),
+        slug: varchar("slug", { length: 100 }).notNull(),
 
-        slug: varchar("company_slug", {
-            length: 100,
-        }).notNull(),
+        website: varchar("website", { length: 255 }),
+        logoUrl: text("logo_url"),
+
+        gstNumber: varchar("gst_number", { length: 15 }),
+        panNumber: varchar("pan_number", { length: 10 }),
+
+        country: varchar("country", { length: 100 }).notNull(),
+        state: varchar("state", { length: 100 }).notNull(),
+        city: varchar("city", { length: 100 }).notNull(),
+        address: text("address"),
+        postalCode: varchar("postal_code", { length: 20 }),
+        timezone: varchar("timezone", { length: 50 })
+            .notNull()
+            .default("Asia/Kolkata"),
+
+        subscriptionPlan: subscriptionPlanEnum("subscription_plan")
+            .notNull()
+            .default("free"),
+        subscriptionStatus: subscriptionStatusEnum("subscription_status")
+            .notNull()
+            .default("trialing"),
+
+        isActive: boolean("is_active").notNull().default(true),
+
+        deletedAt: timestamp("deleted_at", {
+            withTimezone: true,
+        }),
 
         ...timestamps,
     },
     (table) => ({
         slugUnique: uniqueIndex("companies_slug_unique").on(table.slug),
+        nameIdx: index("companies_name_idx").on(table.name),
     }),
 );
 
-/* =============================================================================
- * DEPARTMENTS
- * ============================================================================= */
+
 
 export const departments = pgTable(
-    "department",
+    "departments",
     {
         id: uuid("id").primaryKey().defaultRandom(),
-
-        name: varchar("name", {
-            length: 255,
-        }).notNull(),
 
         companyId: uuid("company_id")
             .notNull()
@@ -77,11 +98,23 @@ export const departments = pgTable(
                 onDelete: "cascade",
             }),
 
+        name: varchar("name", {
+            length: 255,
+        }).notNull(),
+
+        description: text("description"),
+
+        deletedAt: timestamp("deleted_at", {
+            withTimezone: true,
+        }),
+
         ...timestamps,
     },
     (table) => ({
         companyDepartmentUnique: uniqueIndex(
-            "department_company_name_unique",
+            "departments_company_name_unique"
         ).on(table.companyId, table.name),
+
+        companyIdx: index("departments_company_idx").on(table.companyId),
     }),
 );
