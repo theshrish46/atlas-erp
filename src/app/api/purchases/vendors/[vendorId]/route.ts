@@ -1,58 +1,82 @@
+import { NextRequest } from "next/server";
 
-/* =============================================================================
- * PUT /api/purchases/vendors?id=<vendorId>
- * ============================================================================= */
+import { and, eq } from "drizzle-orm";
 
-import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { db } from "@/lib/db";
+import { vendors } from "@/lib/db/schema/purchases-schema";
 import { employees } from "@/lib/db/schema/profile-schema";
+import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
+import {
+    errorResponse,
+    successResponse,
+} from "@/lib/utils/api-response";
 
-export async function PUT(request: NextRequest) {
+type RouteContext = {
+    params: Promise<{
+        vendorId: string;
+    }>;
+};
+
+export async function PUT(
+    request: NextRequest,
+    { params }: RouteContext
+) {
     try {
         const authenticatedUser =
             await getAuthenticatedUser(request);
 
         if (!authenticatedUser) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: "Unauthorized",
-                },
-                { status: 401 },
+            return errorResponse(
+                "Unauthorized",
+                "UNAUTHORIZED",
+                401
             );
         }
 
-        const employee =
-            await db.query.employees.findFirst({
-                where: eq(
-                    employees.userId,
-                    authenticatedUser.userId,
-                ),
-                columns: {
-                    companyId: true,
-                },
-            });
-
-        if (!employee) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: "Employee profile not found",
-                },
-                { status: 404 },
-            );
-        }
-
-        const vendorId =
-            request.nextUrl.searchParams.get("id");
+        const { vendorId } = await params;
 
         if (!vendorId) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: "Vendor ID is required",
-                },
-                { status: 400 },
+            return errorResponse(
+                "Vendor ID is required",
+                "VENDOR_ID_REQUIRED",
+                400
+            );
+        }
+
+        const employee = await db.query.employees.findFirst({
+            where: eq(
+                employees.userId,
+                authenticatedUser.userId
+            ),
+            columns: {
+                companyId: true,
+            },
+        });
+
+        if (!employee) {
+            return errorResponse(
+                "Employee profile not found",
+                "EMPLOYEE_NOT_FOUND",
+                404
+            );
+        }
+
+        const existingVendor =
+            await db.query.vendors.findFirst({
+                where: and(
+                    eq(vendors.id, vendorId),
+                    eq(
+                        vendors.companyId,
+                        employee.companyId
+                    )
+                ),
+            });
+
+        if (!existingVendor) {
+            return errorResponse(
+                "Vendor not found",
+                "VENDOR_NOT_FOUND",
+                404
             );
         }
 
@@ -77,303 +101,256 @@ export async function PUT(request: NextRequest) {
             status,
         } = body;
 
-        /*
-         * Make sure the vendor belongs to
-         * the authenticated user's company.
-         */
+        if (!name?.trim()) {
+            return errorResponse(
+                "Vendor name is required",
+                "VENDOR_NAME_REQUIRED",
+                400
+            );
+        }
+
+        if (!vendorCode?.trim()) {
+            return errorResponse(
+                "Vendor code is required",
+                "VENDOR_CODE_REQUIRED",
+                400
+            );
+        }
+
+        const normalizedVendorCode =
+            vendorCode.trim();
+
+        const duplicateVendor =
+            await db.query.vendors.findFirst({
+                where: and(
+                    eq(
+                        vendors.companyId,
+                        employee.companyId
+                    ),
+                    eq(
+                        vendors.vendorCode,
+                        normalizedVendorCode
+                    )
+                ),
+                columns: {
+                    id: true,
+                },
+            });
+
+        if (
+            duplicateVendor &&
+            duplicateVendor.id !== vendorId
+        ) {
+            return errorResponse(
+                "A vendor with this code already exists",
+                "VENDOR_CODE_ALREADY_EXISTS",
+                409
+            );
+        }
+
+        const [updatedVendor] = await db
+            .update(vendors)
+            .set({
+                name: name.trim(),
+
+                vendorCode:
+                    normalizedVendorCode,
+
+                email:
+                    email?.trim() || null,
+
+                phone:
+                    phone?.trim() || null,
+
+                website:
+                    website?.trim() || null,
+
+                gstNumber:
+                    gstNumber?.trim() || null,
+
+                panNumber:
+                    panNumber?.trim() || null,
+
+                billingAddress:
+                    billingAddress?.trim() || null,
+
+                shippingAddress:
+                    shippingAddress?.trim() || null,
+
+                city:
+                    city?.trim() || null,
+
+                state:
+                    state?.trim() || null,
+
+                country:
+                    country?.trim() || "India",
+
+                postalCode:
+                    postalCode?.trim() || null,
+
+                paymentTerms:
+                    paymentTerms?.trim() || null,
+
+                notes:
+                    notes?.trim() || null,
+
+                status:
+                    status === "inactive"
+                        ? "inactive"
+                        : "active",
+
+                isActive:
+                    status !== "inactive",
+
+                updatedAt: new Date(),
+            })
+            .where(
+                and(
+                    eq(vendors.id, vendorId),
+                    eq(
+                        vendors.companyId,
+                        employee.companyId
+                    )
+                )
+            )
+            .returning();
+
+        if (!updatedVendor) {
+            return errorResponse(
+                "Failed to update vendor",
+                "VENDOR_UPDATE_FAILED",
+                500
+            );
+        }
+
+        return successResponse(
+            {
+                vendor: updatedVendor,
+            },
+            "Vendor updated successfully",
+            200
+        );
+    } catch (error) {
+        console.error(
+            "PUT /api/purchases/vendors/[vendorId] error:",
+            error
+        );
+
+        return errorResponse(
+            "Failed to update vendor",
+            "VENDOR_UPDATE_FAILED",
+            500
+        );
+    }
+}
+
+export async function DELETE(
+    request: NextRequest,
+    { params }: RouteContext
+) {
+    try {
+        const authenticatedUser =
+            await getAuthenticatedUser(request);
+
+        if (!authenticatedUser) {
+            return errorResponse(
+                "Unauthorized",
+                "UNAUTHORIZED",
+                401
+            );
+        }
+
+        const { vendorId } = await params;
+
+        if (!vendorId) {
+            return errorResponse(
+                "Vendor ID is required",
+                "VENDOR_ID_REQUIRED",
+                400
+            );
+        }
+
+        const employee = await db.query.employees.findFirst({
+            where: eq(
+                employees.userId,
+                authenticatedUser.userId
+            ),
+            columns: {
+                companyId: true,
+            },
+        });
+
+        if (!employee) {
+            return errorResponse(
+                "Employee profile not found",
+                "EMPLOYEE_NOT_FOUND",
+                404
+            );
+        }
+
         const existingVendor =
             await db.query.vendors.findFirst({
                 where: and(
                     eq(vendors.id, vendorId),
                     eq(
                         vendors.companyId,
-                        employee.companyId,
-                    ),
+                        employee.companyId
+                    )
                 ),
+                columns: {
+                    id: true,
+                },
             });
 
         if (!existingVendor) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: "Vendor not found",
-                },
-                { status: 404 },
+            return errorResponse(
+                "Vendor not found",
+                "VENDOR_NOT_FOUND",
+                404
             );
         }
 
-        /*
-         * If vendor code is being changed,
-         * make sure it isn't already used.
-         */
-        if (
-            vendorCode &&
-            vendorCode.trim() !==
-            existingVendor.vendorCode
-        ) {
-            const duplicate =
-                await db.query.vendors.findFirst({
-                    where: and(
-                        eq(
-                            vendors.companyId,
-                            employee.companyId,
-                        ),
-                        eq(
-                            vendors.vendorCode,
-                            vendorCode.trim(),
-                        ),
-                    ),
-                });
-
-            if (duplicate) {
-                return NextResponse.json(
-                    {
-                        success: false,
-                        message:
-                            "A vendor with this code already exists",
-                    },
-                    { status: 409 },
-                );
-            }
-        }
-
-        const [updatedVendor] =
-            await db
-                .update(vendors)
-                .set({
-                    ...(name !== undefined && {
-                        name: name.trim(),
-                    }),
-
-                    ...(vendorCode !== undefined && {
-                        vendorCode:
-                            vendorCode.trim(),
-                    }),
-
-                    ...(email !== undefined && {
-                        email:
-                            email?.trim() || null,
-                    }),
-
-                    ...(phone !== undefined && {
-                        phone:
-                            phone?.trim() || null,
-                    }),
-
-                    ...(website !== undefined && {
-                        website:
-                            website?.trim() || null,
-                    }),
-
-                    ...(gstNumber !== undefined && {
-                        gstNumber:
-                            gstNumber?.trim() || null,
-                    }),
-
-                    ...(panNumber !== undefined && {
-                        panNumber:
-                            panNumber?.trim() || null,
-                    }),
-
-                    ...(billingAddress !== undefined && {
-                        billingAddress:
-                            billingAddress?.trim() ||
-                            null,
-                    }),
-
-                    ...(shippingAddress !== undefined && {
-                        shippingAddress:
-                            shippingAddress?.trim() ||
-                            null,
-                    }),
-
-                    ...(city !== undefined && {
-                        city:
-                            city?.trim() || null,
-                    }),
-
-                    ...(state !== undefined && {
-                        state:
-                            state?.trim() || null,
-                    }),
-
-                    ...(country !== undefined && {
-                        country:
-                            country?.trim() ||
-                            "India",
-                    }),
-
-                    ...(postalCode !== undefined && {
-                        postalCode:
-                            postalCode?.trim() || null,
-                    }),
-
-                    ...(paymentTerms !== undefined && {
-                        paymentTerms:
-                            paymentTerms?.trim() ||
-                            null,
-                    }),
-
-                    ...(notes !== undefined && {
-                        notes:
-                            notes?.trim() || null,
-                    }),
-
-                    ...(status !== undefined && {
-                        status:
-                            status === "inactive"
-                                ? "inactive"
-                                : "active",
-
-                        isActive:
-                            status !== "inactive",
-                    }),
-
-                    updatedAt: new Date(),
-                })
-                .where(
-                    and(
-                        eq(vendors.id, vendorId),
-                        eq(
-                            vendors.companyId,
-                            employee.companyId,
-                        ),
-                    ),
+        const [deletedVendor] = await db
+            .delete(vendors)
+            .where(
+                and(
+                    eq(vendors.id, vendorId),
+                    eq(
+                        vendors.companyId,
+                        employee.companyId
+                    )
                 )
-                .returning();
-
-        return NextResponse.json({
-            success: true,
-            message: "Vendor updated successfully",
-            data: updatedVendor,
-        });
-    } catch (error) {
-        console.error(
-            "PUT /api/purchases/vendors error:",
-            error,
-        );
-
-        return NextResponse.json(
-            {
-                success: false,
-                message: "Failed to update vendor",
-            },
-            { status: 500 },
-        );
-    }
-}
-
-/* =============================================================================
- * DELETE /api/purchases/vendors?id=<vendorId>
- * =============================================================================
- *
- * IMPORTANT:
- * We don't physically delete the vendor.
- *
- * Vendors can be referenced by purchase orders and
- * invoices, so hard deletion is dangerous.
- *
- * Instead we deactivate the vendor.
- *
- * ============================================================================= */
-
-export async function DELETE(
-    request: NextRequest,
-) {
-    try {
-        const authenticatedUser =
-            await getAuthenticatedUser();
-
-        if (!authenticatedUser) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: "Unauthorized",
-                },
-                { status: 401 },
-            );
-        }
-
-        const employee =
-            await db.query.employees.findFirst({
-                where: eq(
-                    employees.userId,
-                    authenticatedUser.id,
-                ),
-                columns: {
-                    companyId: true,
-                },
+            )
+            .returning({
+                id: vendors.id,
             });
 
-        if (!employee) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: "Employee profile not found",
-                },
-                { status: 404 },
-            );
-        }
-
-        const vendorId =
-            request.nextUrl.searchParams.get("id");
-
-        if (!vendorId) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: "Vendor ID is required",
-                },
-                { status: 400 },
-            );
-        }
-
-        const [deletedVendor] =
-            await db
-                .update(vendors)
-                .set({
-                    status: "inactive",
-                    isActive: false,
-                    updatedAt: new Date(),
-                })
-                .where(
-                    and(
-                        eq(vendors.id, vendorId),
-                        eq(
-                            vendors.companyId,
-                            employee.companyId,
-                        ),
-                    ),
-                )
-                .returning();
-
         if (!deletedVendor) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: "Vendor not found",
-                },
-                { status: 404 },
+            return errorResponse(
+                "Failed to delete vendor",
+                "VENDOR_DELETE_FAILED",
+                500
             );
         }
 
-        return NextResponse.json({
-            success: true,
-            message: "Vendor deactivated successfully",
-            data: deletedVendor,
-        });
+        return successResponse(
+            {
+                vendorId: deletedVendor.id,
+            },
+            "Vendor deleted successfully",
+            200
+        );
     } catch (error) {
         console.error(
-            "DELETE /api/purchases/vendors error:",
-            error,
+            "DELETE /api/purchases/vendors/[vendorId] error:",
+            error
         );
 
-        return NextResponse.json(
-            {
-                success: false,
-                message: "Failed to delete vendor",
-            },
-            { status: 500 },
+        return errorResponse(
+            "Failed to delete vendor",
+            "VENDOR_DELETE_FAILED",
+            500
         );
     }
 }

@@ -13,9 +13,9 @@ import { generateCompanySlug } from "@/lib/utils/slug";
 import { sessions, users } from "@/lib/db/schema/auth-schema"
 import { permissions, rolePermissions, roles } from "@/lib/db/schema/rbac-schema"
 import { companies } from "@/lib/db/schema/company-schema";
-import { employee } from "@/lib/db/schema/company";
 import { employeeRoles, employees } from "@/lib/db/schema/profile-schema";
 import { auditLogs } from "@/lib/db/schema/audit-schema";
+import { documentCounters } from "@/lib/db/schema/document-counter-schema"
 
 export async function POST(req: NextRequest) {
     try {
@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
                 })
                 .returning();
 
+
             const [createdCompany] = await tx
                 .insert(companies)
                 .values({
@@ -94,6 +95,68 @@ export async function POST(req: NextRequest) {
                     isActive: true,
                 })
                 .returning();
+
+            if (!createdCompany) {
+                throw new Error("Failed to create company");
+            }
+
+            await tx.insert(documentCounters).values([
+                {
+                    companyId: createdCompany.id,
+                    documentType: "vendor",
+                    currentValue: 0,
+                },
+                {
+                    companyId: createdCompany.id,
+                    documentType: "purchase_order",
+                    currentValue: 0,
+                },
+                {
+                    companyId: createdCompany.id,
+                    documentType: "goods_received_note",
+                    currentValue: 0,
+                },
+                {
+                    companyId: createdCompany.id,
+                    documentType: "purchase_invoice",
+                    currentValue: 0,
+                },
+                {
+                    companyId: createdCompany.id,
+                    documentType: "purchase_payment",
+                    currentValue: 0,
+                },
+                {
+                    companyId: createdCompany.id,
+                    documentType: "customer",
+                    currentValue: 0,
+                },
+                {
+                    companyId: createdCompany.id,
+                    documentType: "quotation",
+                    currentValue: 0,
+                },
+                {
+                    companyId: createdCompany.id,
+                    documentType: "sales_order",
+                    currentValue: 0,
+                },
+                {
+                    companyId: createdCompany.id,
+                    documentType: "sales_invoice",
+                    currentValue: 0,
+                },
+                {
+                    companyId: createdCompany.id,
+                    documentType: "sales_payment",
+                    currentValue: 0,
+                },
+                {
+                    companyId: createdCompany.id,
+                    documentType: "inventory_adjustment",
+                    currentValue: 0,
+                },
+            ]);
 
             const [createdEmployee] = await tx
                 .insert(employees)

@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
-import { eq, and, desc } from "drizzle-orm";
+
+import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { vendors } from "@/lib/db/schema/purchases-schema";
@@ -9,18 +10,6 @@ import {
     errorResponse,
     successResponse,
 } from "@/lib/utils/api-response";
-
-/* =============================================================================
- * GET /api/purchases/vendors
- * =============================================================================
- *
- * Returns all vendors belonging to the authenticated user's company.
- *
- * Optional:
- * ?search=acme
- * ?status=active
- *
- * ============================================================================= */
 
 export async function GET(request: NextRequest) {
     try {
@@ -35,17 +24,16 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const employee =
-            await db.query.employees.findFirst({
-                where: eq(
-                    employees.userId,
-                    authenticatedUser.userId
-                ),
-                columns: {
-                    id: true,
-                    companyId: true,
-                },
-            });
+        const employee = await db.query.employees.findFirst({
+            where: eq(
+                employees.userId,
+                authenticatedUser.userId
+            ),
+            columns: {
+                id: true,
+                companyId: true,
+            },
+        });
 
         if (!employee) {
             return errorResponse(
@@ -55,20 +43,15 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const searchParams =
-            request.nextUrl.searchParams;
+        const searchParams = request.nextUrl.searchParams;
 
         const search =
-            searchParams.get("search")?.trim();
+            searchParams.get("search")?.trim().toLowerCase();
 
-        const status =
-            searchParams.get("status");
+        const status = searchParams.get("status");
 
         const conditions = [
-            eq(
-                vendors.companyId,
-                employee.companyId
-            ),
+            eq(vendors.companyId, employee.companyId),
         ];
 
         if (
@@ -88,28 +71,25 @@ export async function GET(request: NextRequest) {
 
         const filteredResult = search
             ? result.filter((vendor) => {
-                const query =
-                    search.toLowerCase();
-
                 return (
                     vendor.name
                         .toLowerCase()
-                        .includes(query) ||
+                        .includes(search) ||
                     vendor.vendorCode
                         .toLowerCase()
-                        .includes(query) ||
+                        .includes(search) ||
                     vendor.email
                         ?.toLowerCase()
-                        .includes(query) ||
+                        .includes(search) ||
                     vendor.phone
                         ?.toLowerCase()
-                        .includes(query) ||
+                        .includes(search) ||
                     vendor.city
                         ?.toLowerCase()
-                        .includes(query) ||
+                        .includes(search) ||
                     vendor.country
                         ?.toLowerCase()
-                        .includes(query)
+                        .includes(search)
                 );
             })
             : result;
@@ -135,10 +115,6 @@ export async function GET(request: NextRequest) {
     }
 }
 
-/* =============================================================================
- * POST /api/purchases/vendors
- * ============================================================================= */
-
 export async function POST(request: NextRequest) {
     try {
         const authenticatedUser =
@@ -152,16 +128,15 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const employee =
-            await db.query.employees.findFirst({
-                where: eq(
-                    employees.userId,
-                    authenticatedUser.userId
-                ),
-                columns: {
-                    companyId: true,
-                },
-            });
+        const employee = await db.query.employees.findFirst({
+            where: eq(
+                employees.userId,
+                authenticatedUser.userId
+            ),
+            columns: {
+                companyId: true,
+            },
+        });
 
         if (!employee) {
             return errorResponse(
@@ -192,10 +167,6 @@ export async function POST(request: NextRequest) {
             status,
         } = body;
 
-        /* ---------------------------------------------------------------------
-         * Required fields
-         * --------------------------------------------------------------------- */
-
         if (!name?.trim()) {
             return errorResponse(
                 "Vendor name is required",
@@ -212,9 +183,8 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        /* ---------------------------------------------------------------------
-         * Duplicate vendor code
-         * --------------------------------------------------------------------- */
+        const normalizedVendorCode =
+            vendorCode.trim();
 
         const existingVendor =
             await db.query.vendors.findFirst({
@@ -225,22 +195,21 @@ export async function POST(request: NextRequest) {
                     ),
                     eq(
                         vendors.vendorCode,
-                        vendorCode.trim()
+                        normalizedVendorCode
                     )
                 ),
+                columns: {
+                    id: true,
+                },
             });
 
         if (existingVendor) {
             return errorResponse(
                 "A vendor with this code already exists",
-                "VENDOR_CODE_EXISTS",
+                "VENDOR_CODE_ALREADY_EXISTS",
                 409
             );
         }
-
-        /* ---------------------------------------------------------------------
-         * Create vendor
-         * --------------------------------------------------------------------- */
 
         const [vendor] = await db
             .insert(vendors)
@@ -249,17 +218,13 @@ export async function POST(request: NextRequest) {
 
                 name: name.trim(),
 
-                vendorCode:
-                    vendorCode.trim(),
+                vendorCode: normalizedVendorCode,
 
-                email:
-                    email?.trim() || null,
+                email: email?.trim() || null,
 
-                phone:
-                    phone?.trim() || null,
+                phone: phone?.trim() || null,
 
-                website:
-                    website?.trim() || null,
+                website: website?.trim() || null,
 
                 gstNumber:
                     gstNumber?.trim() || null,
@@ -301,6 +266,14 @@ export async function POST(request: NextRequest) {
             })
             .returning();
 
+        if (!vendor) {
+            return errorResponse(
+                "Failed to create vendor",
+                "VENDOR_CREATION_FAILED",
+                500
+            );
+        }
+
         return successResponse(
             {
                 vendor,
@@ -316,7 +289,7 @@ export async function POST(request: NextRequest) {
 
         return errorResponse(
             "Failed to create vendor",
-            "VENDOR_CREATE_FAILED",
+            "VENDOR_CREATION_FAILED",
             500
         );
     }
