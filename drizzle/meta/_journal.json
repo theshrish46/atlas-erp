@@ -43,6 +43,13 @@
       "when": 1787941502832,
       "tag": "0005_romantic_trauma",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788111601960,
+      "tag": "0006_lethal_tattoo",
+      "breakpoints": true
     }
   ]
 }

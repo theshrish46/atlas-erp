@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-
 import {
     Card,
     CardContent,
@@ -25,21 +24,9 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
 
 import {
     DropdownMenu,
@@ -50,13 +37,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import {
-    apiDelete,
-    apiGet,
-    apiPost,
-    apiPut,
-} from "@/lib/api/client";
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
-import { ApiError } from "@/lib/api/errors";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
+import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api/client";
 
 /* -------------------------------------------------------------------------- */
 /* Types                                                                      */
@@ -86,7 +78,7 @@ type Vendor = {
     updatedAt: string;
 };
 
-type VendorForm = {
+type VendorFormData = {
     name: string;
     vendorCode: string;
     email: string;
@@ -105,7 +97,7 @@ type VendorForm = {
     status: "active" | "inactive";
 };
 
-const emptyVendorForm: VendorForm = {
+const emptyForm: VendorFormData = {
     name: "",
     vendorCode: "",
     email: "",
@@ -130,22 +122,23 @@ const emptyVendorForm: VendorForm = {
 
 export default function VendorsPage() {
     const [search, setSearch] = useState("");
-
     const [vendors, setVendors] = useState<Vendor[]>([]);
-
     const [loading, setLoading] = useState(true);
 
-    const [dialogOpen, setDialogOpen] = useState(false);
+    const [formOpen, setFormOpen] = useState(false);
+    const [viewOpen, setViewOpen] = useState(false);
 
     const [editingVendor, setEditingVendor] =
         useState<Vendor | null>(null);
 
-    const [form, setForm] =
-        useState<VendorForm>(emptyVendorForm);
+    const [viewingVendor, setViewingVendor] =
+        useState<Vendor | null>(null);
+
+    const [formData, setFormData] =
+        useState<VendorFormData>(emptyForm);
 
     const [saving, setSaving] = useState(false);
-
-    const [deletingVendorId, setDeletingVendorId] =
+    const [deletingId, setDeletingId] =
         useState<string | null>(null);
 
     /* ---------------------------------------------------------------------- */
@@ -169,9 +162,7 @@ export default function VendorsPage() {
     /* ---------------------------------------------------------------------- */
 
     const filteredVendors = useMemo(() => {
-        const query = search
-            .trim()
-            .toLowerCase();
+        const query = search.trim().toLowerCase();
 
         if (!query) {
             return vendors;
@@ -195,7 +186,7 @@ export default function VendorsPage() {
                     ?.toLowerCase()
                     .includes(query) ||
                 vendor.country
-                    ?.toLowerCase()
+                    .toLowerCase()
                     .includes(query)
             );
         });
@@ -205,15 +196,15 @@ export default function VendorsPage() {
     /* Load Vendors                                                           */
     /* ---------------------------------------------------------------------- */
 
-    const loadVendors = async () => {
+    async function loadVendors() {
         try {
             setLoading(true);
 
-            const result = await apiGet<{
+            const data = await apiGet<{
                 vendors: Vendor[];
             }>("/api/purchases/vendors");
 
-            setVendors(result.vendors ?? []);
+            setVendors(data.vendors ?? []);
         } catch (error) {
             console.error(
                 "Failed to load vendors:",
@@ -222,38 +213,38 @@ export default function VendorsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }
 
     useEffect(() => {
         loadVendors();
     }, []);
 
     /* ---------------------------------------------------------------------- */
-    /* Form                                                                   */
+    /* Form Helpers                                                           */
     /* ---------------------------------------------------------------------- */
 
-    const updateField = (
-        field: keyof VendorForm,
+    function updateForm(
+        field: keyof VendorFormData,
         value: string,
-    ) => {
-        setForm((current) => ({
+    ) {
+        setFormData((current) => ({
             ...current,
             [field]: value,
         }));
-    };
+    }
 
-    const openCreateDialog = () => {
+    function openAddVendor() {
         setEditingVendor(null);
-        setForm(emptyVendorForm);
-        setDialogOpen(true);
-    };
+        setFormData(emptyForm);
+        setFormOpen(true);
+    }
 
-    const openEditDialog = (vendor: Vendor) => {
+    function openEditVendor(vendor: Vendor) {
         setEditingVendor(vendor);
 
-        setForm({
-            name: vendor.name ?? "",
-            vendorCode: vendor.vendorCode ?? "",
+        setFormData({
+            name: vendor.name,
+            vendorCode: vendor.vendorCode,
             email: vendor.email ?? "",
             phone: vendor.phone ?? "",
             website: vendor.website ?? "",
@@ -270,23 +261,28 @@ export default function VendorsPage() {
             status: vendor.status,
         });
 
-        setDialogOpen(true);
-    };
+        setFormOpen(true);
+    }
+
+    function openViewVendor(vendor: Vendor) {
+        setViewingVendor(vendor);
+        setViewOpen(true);
+    }
 
     /* ---------------------------------------------------------------------- */
-    /* Create / Update                                                        */
+    /* Create / Update Vendor                                                 */
     /* ---------------------------------------------------------------------- */
 
-    const handleSubmit = async (
+    async function handleSubmit(
         event: React.FormEvent<HTMLFormElement>,
-    ) => {
+    ) {
         event.preventDefault();
 
-        if (!form.name.trim()) {
+        if (!formData.name.trim()) {
             return;
         }
 
-        if (!form.vendorCode.trim()) {
+        if (!formData.vendorCode.trim()) {
             return;
         }
 
@@ -294,53 +290,33 @@ export default function VendorsPage() {
             setSaving(true);
 
             const payload = {
-                name: form.name.trim(),
-                vendorCode: form.vendorCode.trim(),
-
-                email:
-                    form.email.trim() || null,
-
-                phone:
-                    form.phone.trim() || null,
-
-                website:
-                    form.website.trim() || null,
-
+                name: formData.name.trim(),
+                vendorCode: formData.vendorCode.trim(),
+                email: formData.email.trim() || null,
+                phone: formData.phone.trim() || null,
+                website: formData.website.trim() || null,
                 gstNumber:
-                    form.gstNumber.trim() || null,
-
+                    formData.gstNumber.trim() || null,
                 panNumber:
-                    form.panNumber.trim() || null,
-
+                    formData.panNumber.trim() || null,
                 billingAddress:
-                    form.billingAddress.trim() || null,
-
+                    formData.billingAddress.trim() || null,
                 shippingAddress:
-                    form.shippingAddress.trim() || null,
-
-                city:
-                    form.city.trim() || null,
-
-                state:
-                    form.state.trim() || null,
-
+                    formData.shippingAddress.trim() || null,
+                city: formData.city.trim() || null,
+                state: formData.state.trim() || null,
                 country:
-                    form.country.trim() || "India",
-
+                    formData.country.trim() || "India",
                 postalCode:
-                    form.postalCode.trim() || null,
-
+                    formData.postalCode.trim() || null,
                 paymentTerms:
-                    form.paymentTerms.trim() || null,
-
-                notes:
-                    form.notes.trim() || null,
-
-                status: form.status,
+                    formData.paymentTerms.trim() || null,
+                notes: formData.notes.trim() || null,
+                status: formData.status,
             };
 
             if (editingVendor) {
-                const result = await apiPut<{
+                const data = await apiPut<{
                     vendor: Vendor;
                 }>(
                     `/api/purchases/vendors/${editingVendor.id}`,
@@ -350,12 +326,12 @@ export default function VendorsPage() {
                 setVendors((current) =>
                     current.map((vendor) =>
                         vendor.id === editingVendor.id
-                            ? result.vendor
+                            ? data.vendor
                             : vendor,
                     ),
                 );
             } else {
-                const result = await apiPost<{
+                const data = await apiPost<{
                     vendor: Vendor;
                 }>(
                     "/api/purchases/vendors",
@@ -363,38 +339,35 @@ export default function VendorsPage() {
                 );
 
                 setVendors((current) => [
-                    result.vendor,
+                    data.vendor,
                     ...current,
                 ]);
             }
 
-            setDialogOpen(false);
+            setFormOpen(false);
             setEditingVendor(null);
-            setForm(emptyVendorForm);
+            setFormData(emptyForm);
         } catch (error) {
             console.error(
-                "Failed to save vendor:",
+                editingVendor
+                    ? "Failed to update vendor:"
+                    : "Failed to create vendor:",
                 error,
             );
         } finally {
             setSaving(false);
         }
-    };
+    }
 
     /* ---------------------------------------------------------------------- */
     /* Activate / Deactivate                                                  */
     /* ---------------------------------------------------------------------- */
 
-    const handleToggleStatus = async (
+    async function toggleVendorStatus(
         vendor: Vendor,
-    ) => {
+    ) {
         try {
-            const nextStatus =
-                vendor.isActive
-                    ? "inactive"
-                    : "active";
-
-            const result = await apiPut<{
+            const data = await apiPut<{
                 vendor: Vendor;
             }>(
                 `/api/purchases/vendors/${vendor.id}`,
@@ -413,20 +386,22 @@ export default function VendorsPage() {
                     city: vendor.city,
                     state: vendor.state,
                     country: vendor.country,
-                    postalCode:
-                        vendor.postalCode,
+                    postalCode: vendor.postalCode,
                     paymentTerms:
                         vendor.paymentTerms,
                     notes: vendor.notes,
-                    status: nextStatus,
+                    status:
+                        vendor.isActive
+                            ? "inactive"
+                            : "active",
                 },
             );
 
             setVendors((current) =>
-                current.map((currentVendor) =>
-                    currentVendor.id === vendor.id
-                        ? result.vendor
-                        : currentVendor,
+                current.map((item) =>
+                    item.id === vendor.id
+                        ? data.vendor
+                        : item,
                 ),
             );
         } catch (error) {
@@ -435,15 +410,15 @@ export default function VendorsPage() {
                 error,
             );
         }
-    };
+    }
 
     /* ---------------------------------------------------------------------- */
-    /* Delete                                                                 */
+    /* Delete Vendor                                                          */
     /* ---------------------------------------------------------------------- */
 
-    const handleDelete = async (
+    async function handleDeleteVendor(
         vendor: Vendor,
-    ) => {
+    ) {
         const confirmed = window.confirm(
             `Are you sure you want to delete "${vendor.name}"?`,
         );
@@ -453,7 +428,7 @@ export default function VendorsPage() {
         }
 
         try {
-            setDeletingVendorId(vendor.id);
+            setDeletingId(vendor.id);
 
             await apiDelete<{
                 vendorId: string;
@@ -463,8 +438,7 @@ export default function VendorsPage() {
 
             setVendors((current) =>
                 current.filter(
-                    (currentVendor) =>
-                        currentVendor.id !== vendor.id,
+                    (item) => item.id !== vendor.id,
                 ),
             );
         } catch (error) {
@@ -473,9 +447,9 @@ export default function VendorsPage() {
                 error,
             );
         } finally {
-            setDeletingVendorId(null);
+            setDeletingId(null);
         }
-    };
+    }
 
     /* ---------------------------------------------------------------------- */
     /* Render                                                                 */
@@ -483,6 +457,7 @@ export default function VendorsPage() {
 
     return (
         <div className="space-y-6">
+
             {/* ---------------------------------------------------------------- */}
             {/* Header                                                            */}
             {/* ---------------------------------------------------------------- */}
@@ -509,9 +484,7 @@ export default function VendorsPage() {
                     </p>
                 </div>
 
-                <Button
-                    onClick={openCreateDialog}
-                >
+                <Button onClick={openAddVendor}>
                     <Plus className="mr-2 h-4 w-4" />
                     Add Vendor
                 </Button>
@@ -522,6 +495,7 @@ export default function VendorsPage() {
             {/* ---------------------------------------------------------------- */}
 
             <div className="grid gap-4 sm:grid-cols-3">
+
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">
@@ -581,6 +555,7 @@ export default function VendorsPage() {
                         </p>
                     </CardContent>
                 </Card>
+
             </div>
 
             {/* ---------------------------------------------------------------- */}
@@ -620,12 +595,15 @@ export default function VendorsPage() {
                 <Separator />
 
                 <CardContent className="p-0">
+
                     {loading ? (
                         <div className="flex min-h-[360px] items-center justify-center text-sm text-muted-foreground">
                             Loading vendors...
                         </div>
                     ) : filteredVendors.length === 0 ? (
+
                         <div className="flex min-h-[360px] flex-col items-center justify-center px-6 text-center">
+
                             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
                                 <Store className="h-6 w-6" />
                             </div>
@@ -638,31 +616,36 @@ export default function VendorsPage() {
 
                             <p className="mt-1 max-w-md text-sm text-muted-foreground">
                                 {search
-                                    ? "Try searching with a different vendor name, code, email, city, or country."
+                                    ? "Try searching with a different vendor name, email, city, or country."
                                     : "Add your first vendor to start managing your purchasing relationships."}
                             </p>
 
                             {!search && (
                                 <Button
                                     className="mt-5"
-                                    onClick={
-                                        openCreateDialog
-                                    }
+                                    onClick={openAddVendor}
                                 >
                                     <Plus className="mr-2 h-4 w-4" />
                                     Add Vendor
                                 </Button>
                             )}
+
                         </div>
+
                     ) : (
+
                         <div className="divide-y">
+
                             {filteredVendors.map(
                                 (vendor) => (
+
                                     <div
                                         key={vendor.id}
                                         className="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between"
                                     >
+
                                         <div className="flex min-w-0 items-center gap-4">
+
                                             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-semibold text-primary">
                                                 {vendor.name
                                                     .trim()
@@ -671,7 +654,9 @@ export default function VendorsPage() {
                                             </div>
 
                                             <div className="min-w-0">
+
                                                 <div className="flex items-center gap-2">
+
                                                     <p className="truncate font-medium">
                                                         {vendor.name}
                                                     </p>
@@ -687,13 +672,14 @@ export default function VendorsPage() {
                                                             ? "Active"
                                                             : "Inactive"}
                                                     </Badge>
+
                                                 </div>
 
+                                                <p className="mt-1 text-xs text-muted-foreground">
+                                                    {vendor.vendorCode}
+                                                </p>
+
                                                 <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                                                    <span>
-                                                        Code:{" "}
-                                                        {vendor.vendorCode}
-                                                    </span>
 
                                                     {vendor.email && (
                                                         <span className="flex items-center gap-1.5">
@@ -721,21 +707,21 @@ export default function VendorsPage() {
                                                                 {vendor.country}
                                                             </span>
                                                         )}
+
                                                 </div>
+
                                             </div>
+
                                         </div>
 
                                         <DropdownMenu>
+
                                             <DropdownMenuTrigger
                                                 asChild
                                             >
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    disabled={
-                                                        deletingVendorId ===
-                                                        vendor.id
-                                                    }
                                                 >
                                                     <MoreHorizontal className="h-4 w-4" />
 
@@ -746,9 +732,20 @@ export default function VendorsPage() {
                                             </DropdownMenuTrigger>
 
                                             <DropdownMenuContent align="end">
+
                                                 <DropdownMenuItem
                                                     onClick={() =>
-                                                        openEditDialog(
+                                                        openViewVendor(
+                                                            vendor,
+                                                        )
+                                                    }
+                                                >
+                                                    View Vendor
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuItem
+                                                    onClick={() =>
+                                                        openEditVendor(
                                                             vendor,
                                                         )
                                                     }
@@ -760,7 +757,7 @@ export default function VendorsPage() {
 
                                                 <DropdownMenuItem
                                                     onClick={() =>
-                                                        handleToggleStatus(
+                                                        toggleVendorStatus(
                                                             vendor,
                                                         )
                                                     }
@@ -774,33 +771,48 @@ export default function VendorsPage() {
 
                                                 <DropdownMenuItem
                                                     className="text-destructive focus:text-destructive"
+                                                    disabled={
+                                                        deletingId ===
+                                                        vendor.id
+                                                    }
                                                     onClick={() =>
-                                                        handleDelete(
+                                                        handleDeleteVendor(
                                                             vendor,
                                                         )
                                                     }
                                                 >
-                                                    Delete Vendor
+                                                    {deletingId ===
+                                                        vendor.id
+                                                        ? "Deleting..."
+                                                        : "Delete Vendor"}
                                                 </DropdownMenuItem>
+
                                             </DropdownMenuContent>
+
                                         </DropdownMenu>
+
                                     </div>
+
                                 ),
                             )}
+
                         </div>
+
                     )}
+
                 </CardContent>
             </Card>
 
-            {/* ---------------------------------------------------------------- */}
-            {/* Add / Edit Vendor Dialog                                          */}
-            {/* ---------------------------------------------------------------- */}
+            {/* ================================================================== */}
+            {/* ADD / EDIT VENDOR DIALOG                                           */}
+            {/* ================================================================== */}
 
             <Dialog
-                open={dialogOpen}
-                onOpenChange={setDialogOpen}
+                open={formOpen}
+                onOpenChange={setFormOpen}
             >
                 <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+
                     <DialogHeader>
                         <DialogTitle>
                             {editingVendor
@@ -811,7 +823,7 @@ export default function VendorsPage() {
                         <DialogDescription>
                             {editingVendor
                                 ? "Update the vendor information below."
-                                : "Add a supplier to your company's vendor directory."}
+                                : "Add a new supplier to your vendor directory."}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -819,63 +831,70 @@ export default function VendorsPage() {
                         onSubmit={handleSubmit}
                         className="space-y-6"
                     >
+
                         {/* Basic Information */}
 
                         <div className="space-y-4">
+
                             <h3 className="text-sm font-semibold">
                                 Basic Information
                             </h3>
 
                             <div className="grid gap-4 sm:grid-cols-2">
+
                                 <div className="space-y-2">
-                                    <Label htmlFor="vendor-name">
+                                    <Label htmlFor="vendorName">
                                         Vendor Name
                                     </Label>
 
                                     <Input
-                                        id="vendor-name"
-                                        value={form.name}
+                                        id="vendorName"
+                                        value={formData.name}
                                         onChange={(event) =>
-                                            updateField(
+                                            updateForm(
                                                 "name",
                                                 event.target.value,
                                             )
                                         }
-                                        placeholder="ABC Supplies Pvt Ltd"
+                                        placeholder="ABC Suppliers Pvt Ltd"
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="vendor-code">
+                                    <Label htmlFor="vendorCode">
                                         Vendor Code
                                     </Label>
 
                                     <Input
-                                        id="vendor-code"
-                                        value={form.vendorCode}
+                                        id="vendorCode"
+                                        value={
+                                            formData.vendorCode
+                                        }
                                         onChange={(event) =>
-                                            updateField(
+                                            updateForm(
                                                 "vendorCode",
                                                 event.target.value,
                                             )
                                         }
-                                        placeholder="VEN-001"
+                                        placeholder="VEN-0001"
                                     />
                                 </div>
+
                             </div>
 
                             <div className="grid gap-4 sm:grid-cols-2">
+
                                 <div className="space-y-2">
-                                    <Label htmlFor="vendor-email">
+                                    <Label htmlFor="email">
                                         Email
                                     </Label>
 
                                     <Input
-                                        id="vendor-email"
+                                        id="email"
                                         type="email"
-                                        value={form.email}
+                                        value={formData.email}
                                         onChange={(event) =>
-                                            updateField(
+                                            updateForm(
                                                 "email",
                                                 event.target.value,
                                             )
@@ -885,15 +904,15 @@ export default function VendorsPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="vendor-phone">
+                                    <Label htmlFor="phone">
                                         Phone
                                     </Label>
 
                                     <Input
-                                        id="vendor-phone"
-                                        value={form.phone}
+                                        id="phone"
+                                        value={formData.phone}
                                         onChange={(event) =>
-                                            updateField(
+                                            updateForm(
                                                 "phone",
                                                 event.target.value,
                                             )
@@ -901,18 +920,19 @@ export default function VendorsPage() {
                                         placeholder="+91 98765 43210"
                                     />
                                 </div>
+
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="vendor-website">
+                                <Label htmlFor="website">
                                     Website
                                 </Label>
 
                                 <Input
-                                    id="vendor-website"
-                                    value={form.website}
+                                    id="website"
+                                    value={formData.website}
                                     onChange={(event) =>
-                                        updateField(
+                                        updateForm(
                                             "website",
                                             event.target.value,
                                         )
@@ -920,6 +940,7 @@ export default function VendorsPage() {
                                     placeholder="https://example.com"
                                 />
                             </div>
+
                         </div>
 
                         <Separator />
@@ -927,47 +948,55 @@ export default function VendorsPage() {
                         {/* Tax Information */}
 
                         <div className="space-y-4">
+
                             <h3 className="text-sm font-semibold">
                                 Tax Information
                             </h3>
 
                             <div className="grid gap-4 sm:grid-cols-2">
+
                                 <div className="space-y-2">
-                                    <Label htmlFor="vendor-gst">
+                                    <Label htmlFor="gstNumber">
                                         GST Number
                                     </Label>
 
                                     <Input
-                                        id="vendor-gst"
-                                        value={form.gstNumber}
+                                        id="gstNumber"
+                                        value={
+                                            formData.gstNumber
+                                        }
                                         onChange={(event) =>
-                                            updateField(
+                                            updateForm(
                                                 "gstNumber",
                                                 event.target.value,
                                             )
                                         }
-                                        placeholder="22AAAAA0000A1Z5"
+                                        placeholder="29ABCDE1234F1Z5"
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="vendor-pan">
+                                    <Label htmlFor="panNumber">
                                         PAN Number
                                     </Label>
 
                                     <Input
-                                        id="vendor-pan"
-                                        value={form.panNumber}
+                                        id="panNumber"
+                                        value={
+                                            formData.panNumber
+                                        }
                                         onChange={(event) =>
-                                            updateField(
+                                            updateForm(
                                                 "panNumber",
                                                 event.target.value,
                                             )
                                         }
-                                        placeholder="AAAAA0000A"
+                                        placeholder="ABCDE1234F"
                                     />
                                 </div>
+
                             </div>
+
                         </div>
 
                         <Separator />
@@ -975,63 +1004,63 @@ export default function VendorsPage() {
                         {/* Address */}
 
                         <div className="space-y-4">
+
                             <h3 className="text-sm font-semibold">
                                 Address
                             </h3>
 
                             <div className="space-y-2">
-                                <Label htmlFor="billing-address">
+                                <Label htmlFor="billingAddress">
                                     Billing Address
                                 </Label>
 
                                 <Textarea
-                                    id="billing-address"
+                                    id="billingAddress"
                                     value={
-                                        form.billingAddress
+                                        formData.billingAddress
                                     }
                                     onChange={(event) =>
-                                        updateField(
+                                        updateForm(
                                             "billingAddress",
                                             event.target.value,
                                         )
                                     }
                                     placeholder="Billing address"
-                                    rows={2}
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="shipping-address">
+                                <Label htmlFor="shippingAddress">
                                     Shipping Address
                                 </Label>
 
                                 <Textarea
-                                    id="shipping-address"
+                                    id="shippingAddress"
                                     value={
-                                        form.shippingAddress
+                                        formData.shippingAddress
                                     }
                                     onChange={(event) =>
-                                        updateField(
+                                        updateForm(
                                             "shippingAddress",
                                             event.target.value,
                                         )
                                     }
                                     placeholder="Shipping address"
-                                    rows={2}
                                 />
                             </div>
 
                             <div className="grid gap-4 sm:grid-cols-2">
+
                                 <div className="space-y-2">
-                                    <Label htmlFor="vendor-city">
+                                    <Label htmlFor="city">
                                         City
                                     </Label>
 
                                     <Input
-                                        id="vendor-city"
-                                        value={form.city}
+                                        id="city"
+                                        value={formData.city}
                                         onChange={(event) =>
-                                            updateField(
+                                            updateForm(
                                                 "city",
                                                 event.target.value,
                                             )
@@ -1041,15 +1070,15 @@ export default function VendorsPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="vendor-state">
+                                    <Label htmlFor="state">
                                         State
                                     </Label>
 
                                     <Input
-                                        id="vendor-state"
-                                        value={form.state}
+                                        id="state"
+                                        value={formData.state}
                                         onChange={(event) =>
-                                            updateField(
+                                            updateForm(
                                                 "state",
                                                 event.target.value,
                                             )
@@ -1057,19 +1086,23 @@ export default function VendorsPage() {
                                         placeholder="Karnataka"
                                     />
                                 </div>
+
                             </div>
 
                             <div className="grid gap-4 sm:grid-cols-2">
+
                                 <div className="space-y-2">
-                                    <Label htmlFor="vendor-country">
+                                    <Label htmlFor="country">
                                         Country
                                     </Label>
 
                                     <Input
-                                        id="vendor-country"
-                                        value={form.country}
+                                        id="country"
+                                        value={
+                                            formData.country
+                                        }
                                         onChange={(event) =>
-                                            updateField(
+                                            updateForm(
                                                 "country",
                                                 event.target.value,
                                             )
@@ -1078,15 +1111,17 @@ export default function VendorsPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="vendor-postal">
+                                    <Label htmlFor="postalCode">
                                         Postal Code
                                     </Label>
 
                                     <Input
-                                        id="vendor-postal"
-                                        value={form.postalCode}
+                                        id="postalCode"
+                                        value={
+                                            formData.postalCode
+                                        }
                                         onChange={(event) =>
-                                            updateField(
+                                            updateForm(
                                                 "postalCode",
                                                 event.target.value,
                                             )
@@ -1094,30 +1129,33 @@ export default function VendorsPage() {
                                         placeholder="560001"
                                     />
                                 </div>
+
                             </div>
+
                         </div>
 
                         <Separator />
 
-                        {/* Purchasing */}
+                        {/* Payment */}
 
                         <div className="space-y-4">
+
                             <h3 className="text-sm font-semibold">
-                                Purchasing
+                                Payment & Notes
                             </h3>
 
                             <div className="space-y-2">
-                                <Label htmlFor="payment-terms">
+                                <Label htmlFor="paymentTerms">
                                     Payment Terms
                                 </Label>
 
                                 <Input
-                                    id="payment-terms"
+                                    id="paymentTerms"
                                     value={
-                                        form.paymentTerms
+                                        formData.paymentTerms
                                     }
                                     onChange={(event) =>
-                                        updateField(
+                                        updateForm(
                                             "paymentTerms",
                                             event.target.value,
                                         )
@@ -1127,51 +1165,53 @@ export default function VendorsPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="vendor-notes">
+                                <Label htmlFor="notes">
                                     Notes
                                 </Label>
 
                                 <Textarea
-                                    id="vendor-notes"
-                                    value={form.notes}
+                                    id="notes"
+                                    value={formData.notes}
                                     onChange={(event) =>
-                                        updateField(
+                                        updateForm(
                                             "notes",
                                             event.target.value,
                                         )
                                     }
                                     placeholder="Additional notes about this vendor"
-                                    rows={3}
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="vendor-status">
-                                    Status
-                                </Label>
+                        </div>
 
-                                <select
-                                    id="vendor-status"
-                                    value={form.status}
-                                    onChange={(event) =>
-                                        updateField(
-                                            "status",
-                                            event.target.value as
-                                            | "active"
-                                            | "inactive",
-                                        )
-                                    }
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                                >
-                                    <option value="active">
-                                        Active
-                                    </option>
+                        {/* Status */}
 
-                                    <option value="inactive">
-                                        Inactive
-                                    </option>
-                                </select>
-                            </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="status">
+                                Status
+                            </Label>
+
+                            <select
+                                id="status"
+                                value={formData.status}
+                                onChange={(event) =>
+                                    updateForm(
+                                        "status",
+                                        event.target.value as
+                                        | "active"
+                                        | "inactive",
+                                    )
+                                }
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                                <option value="active">
+                                    Active
+                                </option>
+
+                                <option value="inactive">
+                                    Inactive
+                                </option>
+                            </select>
                         </div>
 
                         <DialogFooter>
@@ -1179,7 +1219,7 @@ export default function VendorsPage() {
                                 type="button"
                                 variant="outline"
                                 onClick={() =>
-                                    setDialogOpen(false)
+                                    setFormOpen(false)
                                 }
                                 disabled={saving}
                             >
@@ -1197,9 +1237,244 @@ export default function VendorsPage() {
                                         : "Create Vendor"}
                             </Button>
                         </DialogFooter>
+
                     </form>
+
                 </DialogContent>
             </Dialog>
+
+            {/* ================================================================== */}
+            {/* VIEW VENDOR DIALOG                                                 */}
+            {/* ================================================================== */}
+
+            <Dialog
+                open={viewOpen}
+                onOpenChange={setViewOpen}
+            >
+                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+
+                    <DialogHeader>
+                        <DialogTitle>
+                            {viewingVendor?.name}
+                        </DialogTitle>
+
+                        <DialogDescription>
+                            Vendor Code:{" "}
+                            {viewingVendor?.vendorCode}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {viewingVendor && (
+                        <div className="space-y-6">
+
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 font-semibold text-primary">
+                                    {viewingVendor.name
+                                        .trim()
+                                        .charAt(0)
+                                        .toUpperCase()}
+                                </div>
+
+                                <div>
+                                    <p className="font-semibold">
+                                        {viewingVendor.name}
+                                    </p>
+
+                                    <Badge
+                                        variant={
+                                            viewingVendor.isActive
+                                                ? "default"
+                                                : "secondary"
+                                        }
+                                    >
+                                        {viewingVendor.isActive
+                                            ? "Active"
+                                            : "Inactive"}
+                                    </Badge>
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+
+                                <div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Email
+                                    </p>
+
+                                    <p className="mt-1 text-sm">
+                                        {viewingVendor.email ||
+                                            "—"}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Phone
+                                    </p>
+
+                                    <p className="mt-1 text-sm">
+                                        {viewingVendor.phone ||
+                                            "—"}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Website
+                                    </p>
+
+                                    <p className="mt-1 text-sm">
+                                        {viewingVendor.website ||
+                                            "—"}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-muted-foreground">
+                                        GST Number
+                                    </p>
+
+                                    <p className="mt-1 text-sm">
+                                        {viewingVendor.gstNumber ||
+                                            "—"}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-muted-foreground">
+                                        PAN Number
+                                    </p>
+
+                                    <p className="mt-1 text-sm">
+                                        {viewingVendor.panNumber ||
+                                            "—"}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Payment Terms
+                                    </p>
+
+                                    <p className="mt-1 text-sm">
+                                        {viewingVendor.paymentTerms ||
+                                            "—"}
+                                    </p>
+                                </div>
+
+                            </div>
+
+                            <Separator />
+
+                            <div className="grid gap-6 sm:grid-cols-2">
+
+                                <div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Billing Address
+                                    </p>
+
+                                    <p className="mt-1 whitespace-pre-line text-sm">
+                                        {viewingVendor.billingAddress ||
+                                            "—"}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Shipping Address
+                                    </p>
+
+                                    <p className="mt-1 whitespace-pre-line text-sm">
+                                        {viewingVendor.shippingAddress ||
+                                            "—"}
+                                    </p>
+                                </div>
+
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-3">
+
+                                <div>
+                                    <p className="text-xs text-muted-foreground">
+                                        City
+                                    </p>
+
+                                    <p className="mt-1 text-sm">
+                                        {viewingVendor.city ||
+                                            "—"}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-muted-foreground">
+                                        State
+                                    </p>
+
+                                    <p className="mt-1 text-sm">
+                                        {viewingVendor.state ||
+                                            "—"}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Postal Code
+                                    </p>
+
+                                    <p className="mt-1 text-sm">
+                                        {viewingVendor.postalCode ||
+                                            "—"}
+                                    </p>
+                                </div>
+
+                            </div>
+
+                            {viewingVendor.notes && (
+                                <>
+                                    <Separator />
+
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">
+                                            Notes
+                                        </p>
+
+                                        <p className="mt-1 whitespace-pre-line text-sm">
+                                            {viewingVendor.notes}
+                                        </p>
+                                    </div>
+                                </>
+                            )}
+
+                            <DialogFooter>
+                                <Button
+                                    variant="outline"
+                                    onClick={() =>
+                                        setViewOpen(false)
+                                    }
+                                >
+                                    Close
+                                </Button>
+
+                                <Button
+                                    onClick={() => {
+                                        setViewOpen(false);
+                                        openEditVendor(
+                                            viewingVendor,
+                                        );
+                                    }}
+                                >
+                                    Edit Vendor
+                                </Button>
+                            </DialogFooter>
+
+                        </div>
+                    )}
+
+                </DialogContent>
+            </Dialog>
+
         </div>
     );
 }

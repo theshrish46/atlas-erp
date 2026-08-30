@@ -8,4 +8,5 @@ export * from "./audit-schema";
 export * from "./inventory-schema";
 export * from "./purchases-schema";
 export * from "./sales-schema";
+export * from "./document-counter-schema"
 export * from "./relations";
