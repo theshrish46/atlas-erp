@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
     ArrowLeft,
@@ -16,6 +16,7 @@ import {
     Truck,
 } from "lucide-react";
 
+import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api/client"
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -44,6 +45,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { api } from "@/lib/api/axios";
 
 type PurchaseOrderStatus =
     | "draft"
@@ -145,7 +147,7 @@ export default function PurchaseOrdersPage() {
         PurchaseOrder[]
     >([]);
 
-    const [vendors] = useState<Vendor[]>([]);
+    const [vendors, setVendors] = useState<Vendor[]>([]);
     const [warehouses] = useState<Warehouse[]>([]);
     const [products] = useState<Product[]>([]);
 
@@ -163,6 +165,33 @@ export default function PurchaseOrdersPage() {
     const [items, setItems] = useState<PurchaseOrderItem[]>([
         emptyItem,
     ]);
+
+    const [loading, setLoading] = useState(true);
+
+
+
+    async function loadVendors() {
+        try {
+            setLoading(true);
+
+            const data = await apiGet<{
+                vendors: Vendor[];
+            }>("/api/purchases/vendors");
+
+            setVendors(data.vendors ?? []);
+        } catch (error) {
+            console.error(
+                "Failed to load vendors:",
+                error,
+            );
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        loadVendors();
+    }, []);
 
     const draftOrders = useMemo(
         () =>
@@ -397,64 +426,55 @@ export default function PurchaseOrdersPage() {
         };
 
         try {
-            const url = editingOrder
-                ? `/api/purchases/purchase-orders/${editingOrder.id}`
-                : "/api/purchases/purchase-orders";
-
-            const response = await fetch(url, {
-                method: editingOrder ? "PUT" : "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(
-                    data?.message ||
-                    "Failed to save purchase order",
+            const savedOrder = editingOrder
+                ? await apiPut<
+                    { purchaseOrder: PurchaseOrder },
+                    typeof payload
+                >(
+                    `/api/purchases/purchase-orders/${editingOrder.id}`,
+                    payload,
+                )
+                : await apiPost<
+                    { purchaseOrder: PurchaseOrder },
+                    typeof payload
+                >(
+                    "/api/purchases/purchase-orders",
+                    payload,
                 );
-            }
 
-            const savedOrder = data?.data?.purchaseOrder;
+            const order = savedOrder.purchaseOrder;
 
-            if (savedOrder) {
-                if (editingOrder) {
-                    setPurchaseOrders((current) =>
-                        current.map((order) =>
-                            order.id === savedOrder.id
-                                ? {
-                                    ...savedOrder,
-                                    vendorName:
-                                        savedOrder.vendorName ||
-                                        vendors.find(
-                                            (vendor) =>
-                                                vendor.id ===
-                                                savedOrder.vendorId,
-                                        )?.name ||
-                                        editingOrder.vendorName,
-                                }
-                                : order,
-                        ),
-                    );
-                } else {
-                    setPurchaseOrders((current) => [
-                        {
-                            ...savedOrder,
-                            vendorName:
-                                savedOrder.vendorName ||
-                                vendors.find(
-                                    (vendor) =>
-                                        vendor.id ===
-                                        savedOrder.vendorId,
-                                )?.name ||
-                                "Unknown Vendor",
-                        },
-                        ...current,
-                    ]);
-                }
+            if (editingOrder) {
+                setPurchaseOrders((current) =>
+                    current.map((existingOrder) =>
+                        existingOrder.id === order.id
+                            ? {
+                                ...order,
+                                vendorName:
+                                    order.vendorName ||
+                                    vendors.find(
+                                        (vendor) =>
+                                            vendor.id === order.vendorId,
+                                    )?.name ||
+                                    editingOrder.vendorName,
+                            }
+                            : existingOrder,
+                    ),
+                );
+            } else {
+                setPurchaseOrders((current) => [
+                    {
+                        ...order,
+                        vendorName:
+                            order.vendorName ||
+                            vendors.find(
+                                (vendor) =>
+                                    vendor.id === order.vendorId,
+                            )?.name ||
+                            "Unknown Vendor",
+                    },
+                    ...current,
+                ]);
             }
 
             setDialogOpen(false);
@@ -839,7 +859,7 @@ export default function PurchaseOrdersPage() {
                     }
                 }}
             >
-                <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
+                <DialogContent className="w-[65vw] max-w-[65vw] max-h-[90vh] overflow-y-auto sm:max-w-[65vw]">
                     <DialogHeader>
                         <DialogTitle>
                             {editingOrder
@@ -1334,6 +1354,6 @@ export default function PurchaseOrdersPage() {
                     </form>
                 </DialogContent>
             </Dialog>
-        </div>
+        </div >
     );
 }
